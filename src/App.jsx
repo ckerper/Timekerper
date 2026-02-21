@@ -9,7 +9,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-21 1:15 PM CT'
+const LAST_UPDATED = '2026-02-21 1:17 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -2342,7 +2342,7 @@ function App() {
                     {' '}({settings.debugTimeOffset > 0 ? '+' : ''}{settings.debugTimeOffset || 0}m from real time)
                   </p>
                   <p className="settings-hint" style={{ marginTop: '1rem', fontSize: '0.85em', opacity: 0.7 }}>
-                    Last pushed: {LAST_UPDATED}
+                    Last updated: {LAST_UPDATED}
                   </p>
                 </div>
               )}
