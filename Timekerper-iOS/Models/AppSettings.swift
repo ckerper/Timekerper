@@ -26,6 +26,34 @@ struct AppSettings: Codable, Equatable, Sendable {
         "zoomLevel", "fitMode", "debugMode", "debugTimeOffset"
     ]
 
+    // Custom decoder: provide defaults for any missing keys (especially local-only
+    // keys stripped from the sync payload, and web-only keys like ics* settings)
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        workdayStart = try c.decodeIfPresent(String.self, forKey: .workdayStart) ?? "09:00"
+        workdayEnd = try c.decodeIfPresent(String.self, forKey: .workdayEnd) ?? "17:00"
+        useExtendedHours = try c.decodeIfPresent(Bool.self, forKey: .useExtendedHours) ?? true
+        extendedStart = try c.decodeIfPresent(String.self, forKey: .extendedStart) ?? "06:00"
+        extendedEnd = try c.decodeIfPresent(String.self, forKey: .extendedEnd) ?? "23:59"
+        autoStartNext = try c.decodeIfPresent(Bool.self, forKey: .autoStartNext) ?? false
+        darkMode = try c.decodeIfPresent(Bool.self, forKey: .darkMode) ?? false
+        zoomLevel = try c.decodeIfPresent(Double.self, forKey: .zoomLevel) ?? 1.5
+        fitMode = try c.decodeIfPresent(Bool.self, forKey: .fitMode) ?? true
+        smartDuration = try c.decodeIfPresent(Bool.self, forKey: .smartDuration) ?? true
+        defaultTaskDuration = try c.decodeIfPresent(Int.self, forKey: .defaultTaskDuration) ?? 30
+        defaultEventDuration = try c.decodeIfPresent(Int.self, forKey: .defaultEventDuration) ?? 60
+        defaultTaskColor = try c.decodeIfPresent(String.self, forKey: .defaultTaskColor) ?? "#94a3b8"
+        defaultEventColor = try c.decodeIfPresent(String.self, forKey: .defaultEventColor) ?? "#94a3b8"
+        minFragmentMinutes = try c.decodeIfPresent(Int.self, forKey: .minFragmentMinutes) ?? 5
+        calendarFontSize = try c.decodeIfPresent(String.self, forKey: .calendarFontSize) ?? "medium"
+        wrapListNames = try c.decodeIfPresent(Bool.self, forKey: .wrapListNames) ?? true
+        restrictTasksToWorkHours = try c.decodeIfPresent(Bool.self, forKey: .restrictTasksToWorkHours) ?? true
+        debugMode = try c.decodeIfPresent(Bool.self, forKey: .debugMode) ?? false
+        debugTimeOffset = try c.decodeIfPresent(Int.self, forKey: .debugTimeOffset) ?? 0
+    }
+
+    init() {}
+
     /// Returns a copy with local-only keys reset to defaults for sync/export.
     func strippingLocalOnly() -> AppSettings {
         var copy = self
