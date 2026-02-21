@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CalendarView: View {
     @Environment(AppState.self) private var appState
+    @State private var hasScrolled = false
 
     // Zoom levels matching web
     private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
@@ -13,7 +14,7 @@ struct CalendarView: View {
     private var totalVisibleMinutes: Int { extEndMin - extStartMin }
 
     private var pixelsPerMinute: CGFloat {
-        CGFloat(appState.settings.zoomLevel) * 1.2
+        CGFloat(appState.settings.zoomLevel) * 1.5
     }
 
     private var totalHeight: CGFloat {
@@ -23,6 +24,9 @@ struct CalendarView: View {
     private let timeLabelWidth: CGFloat = 52
     private let gridLeftPadding: CGFloat = 56
 
+    private var startHour: Int { extStartMin / 60 }
+    private var endHour: Int { (extEndMin + 59) / 60 }
+
     var body: some View {
         GeometryReader { geo in
             let contentWidth = geo.size.width - gridLeftPadding
@@ -30,6 +34,17 @@ struct CalendarView: View {
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
                     ZStack(alignment: .topLeading) {
+                        // Invisible hour anchors for ScrollViewReader scroll-to support.
+                        // Uses VStack so each cell has a real layout position (unlike .offset).
+                        VStack(spacing: 0) {
+                            ForEach(startHour..<endHour, id: \.self) { hour in
+                                Color.clear
+                                    .frame(height: 60 * pixelsPerMinute)
+                                    .id("hour-\(hour)")
+                            }
+                        }
+                        .frame(width: 1)
+
                         // Dim zones (outside working hours)
                         dimZones(contentWidth: contentWidth)
 
@@ -54,11 +69,26 @@ struct CalendarView: View {
                         }
                     }
                     .frame(width: geo.size.width, height: totalHeight)
-                    .id("calendarGrid")
+                    // Extra padding at bottom so evening hours can be scrolled into view
+                    .padding(.bottom, geo.size.height * 0.6)
                 }
                 .onAppear {
-                    // Auto-scroll to current time
-                    // We'll use a slight delay to let layout settle
+                    if !hasScrolled {
+                        hasScrolled = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            let targetHour: Int
+                            if appState.isToday {
+                                // Scroll to one hour before current time
+                                targetHour = max(appState.currentTimeMinutes / 60 - 1, startHour)
+                            } else {
+                                // Scroll to workday start
+                                targetHour = max(workStartMin / 60, startHour)
+                            }
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                proxy.scrollTo("hour-\(targetHour)", anchor: .top)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -91,9 +121,6 @@ struct CalendarView: View {
 
     @ViewBuilder
     private func hourLines(contentWidth: CGFloat) -> some View {
-        let startHour = extStartMin / 60
-        let endHour = (extEndMin + 59) / 60
-
         ForEach(startHour..<endHour, id: \.self) { hour in
             let minute = hour * 60
             if minute >= extStartMin && minute <= extEndMin {
@@ -109,9 +136,6 @@ struct CalendarView: View {
 
     @ViewBuilder
     private func timeLabels() -> some View {
-        let startHour = extStartMin / 60
-        let endHour = (extEndMin + 59) / 60
-
         ForEach(startHour..<endHour, id: \.self) { hour in
             let minute = hour * 60
             if minute >= extStartMin && minute <= extEndMin {

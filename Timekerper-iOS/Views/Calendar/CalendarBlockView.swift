@@ -6,7 +6,7 @@ struct CalendarBlockView: View {
     let contentWidth: CGFloat
 
     private var extStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.extendedStart) }
-    private var pixelsPerMinute: CGFloat { CGFloat(appState.settings.zoomLevel) * 1.2 }
+    private var pixelsPerMinute: CGFloat { CGFloat(appState.settings.zoomLevel) * 1.5 }
 
     private var blockHeight: CGFloat {
         CGFloat(block.endMin - block.startMin) * pixelsPerMinute
