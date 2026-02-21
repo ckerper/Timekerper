@@ -1657,6 +1657,18 @@ body {
   margin-top: 0.25rem;
 }
 
+.sync-conflict-msg {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.sync-conflict-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .sync-indicator {
   display: inline-block;
   width: 7px;

@@ -293,6 +293,7 @@ function App() {
   const [syncStatus, setSyncStatus] = useState('idle') // 'idle' | 'syncing' | 'error'
   const [syncError, setSyncError] = useState(null)
   const [lastSynced, setLastSynced] = useState(null)
+  const [syncConflict, setSyncConflict] = useState(null) // { pat, gistId } when existing gist found during connect
   const syncingRef = useRef(false)
   const suppressPushRef = useRef(false)
 
@@ -1330,18 +1331,44 @@ function App() {
     try {
       const existing = await findGist(pat)
       if (existing) {
-        setSyncGistId(existing.gistId)
-        if (existing.data) applyRemoteData(existing.data)
-        setLastSynced(new Date())
+        // Existing gist found — ask user which direction to sync
+        setSyncStatus('idle')
+        setSyncConflict({ pat, gistId: existing.gistId })
       } else {
+        // No gist yet — create with this device's data
         const payload = buildPayload(tasksRef.current, eventsRef.current, tags, settings, activeTaskId)
         const gistId = await createGist(pat, payload)
         setSyncGistId(gistId)
+        setSyncPat(pat)
+        setSyncEnabled(true)
+        setSyncStatus('idle')
         setLastSynced(new Date())
       }
+    } catch (err) {
+      setSyncStatus('error')
+      setSyncError(err.message)
+    }
+  }
+
+  const resolveSyncConflict = async (direction) => {
+    const { pat, gistId } = syncConflict
+    setSyncConflict(null)
+    setSyncStatus('syncing')
+    try {
+      if (direction === 'pull') {
+        // Use cloud data — overwrite this device
+        const remote = await pullFromGist(pat, gistId)
+        applyRemoteData(remote)
+      } else {
+        // Use this device — overwrite cloud
+        const payload = buildPayload(tasksRef.current, eventsRef.current, tags, settings, activeTaskId)
+        await pushToGist(pat, gistId, payload)
+      }
+      setSyncGistId(gistId)
       setSyncPat(pat)
       setSyncEnabled(true)
       setSyncStatus('idle')
+      setLastSynced(new Date())
     } catch (err) {
       setSyncStatus('error')
       setSyncError(err.message)
@@ -2528,13 +2555,24 @@ function App() {
                       placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                     />
                   </div>
-                  <button
-                    className="btn-primary"
-                    onClick={() => connectSync(syncPat)}
-                    disabled={!syncPat.trim() || syncStatus === 'syncing'}
-                  >
-                    {syncStatus === 'syncing' ? 'Connecting...' : 'Connect'}
-                  </button>
+                  {syncConflict ? (
+                    <div className="sync-conflict">
+                      <p className="sync-conflict-msg">Existing sync data found. Which do you want to keep?</p>
+                      <div className="sync-conflict-btns">
+                        <button className="btn-primary" onClick={() => resolveSyncConflict('pull')}>Use cloud data</button>
+                        <button className="btn-secondary" onClick={() => resolveSyncConflict('push')}>Use this device</button>
+                        <button className="btn-secondary" onClick={() => { setSyncConflict(null); setSyncPat('') }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn-primary"
+                      onClick={() => connectSync(syncPat)}
+                      disabled={!syncPat.trim() || syncStatus === 'syncing'}
+                    >
+                      {syncStatus === 'syncing' ? 'Connecting...' : 'Connect'}
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
