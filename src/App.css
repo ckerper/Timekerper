@@ -1634,6 +1634,23 @@ body {
 .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
 .sync-dot.error { background: #ef4444; }
 
+.sync-help {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.sync-help summary {
+  cursor: pointer;
+  color: var(--accent-blue, #667eea);
+}
+
+.sync-help ol {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
 .sync-error {
   font-size: 0.75rem;
   color: #ef4444;

@@ -2509,6 +2509,17 @@ function App() {
                 <>
                   <div className="form-group">
                     <label>GitHub Personal Access Token <span className="label-hint">— needs "gist" scope only</span></label>
+                    <details className="sync-help">
+                      <summary>How do I get one?</summary>
+                      <ol>
+                        <li>Go to <strong>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</strong></li>
+                        <li>Click <strong>Generate new token (classic)</strong></li>
+                        <li>Give it a name (e.g. "Timekerper sync")</li>
+                        <li>Check only the <strong>gist</strong> scope</li>
+                        <li>Click <strong>Generate token</strong> and copy it</li>
+                        <li>Paste the same token on each device you want to sync</li>
+                      </ol>
+                    </details>
                     <input
                       type="password"
                       className="pat-input"
