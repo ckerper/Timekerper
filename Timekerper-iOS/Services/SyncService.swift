@@ -48,8 +48,18 @@ enum SyncService {
                    let fileObj = fullFiles[gistFilename] as? [String: Any],
                    let content = fileObj["content"] as? String,
                    let contentData = content.data(using: .utf8) {
-                    let payload = try JSONDecoder().decode(SyncPayload.self, from: contentData)
-                    return (gistId: gistId, data: payload)
+                    do {
+                        let payload = try JSONDecoder().decode(SyncPayload.self, from: contentData)
+                        return (gistId: gistId, data: payload)
+                    } catch let DecodingError.keyNotFound(key, context) {
+                        throw SyncError.decodeFailed("Missing key '\(key.stringValue)' at \(context.codingPath.map(\.stringValue).joined(separator: "."))")
+                    } catch let DecodingError.typeMismatch(type, context) {
+                        throw SyncError.decodeFailed("Type mismatch for \(type) at \(context.codingPath.map(\.stringValue).joined(separator: "."))")
+                    } catch let DecodingError.valueNotFound(type, context) {
+                        throw SyncError.decodeFailed("Null value for \(type) at \(context.codingPath.map(\.stringValue).joined(separator: "."))")
+                    } catch {
+                        throw SyncError.decodeFailed(error.localizedDescription)
+                    }
                 }
                 return nil
             }
@@ -122,6 +132,7 @@ enum SyncService {
         case gistNotFound
         case createFailed
         case fileMissing
+        case decodeFailed(String)
 
         var errorDescription: String? {
             switch self {
@@ -131,6 +142,7 @@ enum SyncService {
             case .gistNotFound: return "Gist not found"
             case .createFailed: return "Failed to create gist"
             case .fileMissing: return "Sync file missing from gist"
+            case .decodeFailed(let detail): return "Decode error: \(detail)"
             }
         }
     }
