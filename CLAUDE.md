@@ -33,4 +33,13 @@ npm run dev     # Vite dev server on localhost:5173
 npm run build   # Production build
 ```
 
-**IMPORTANT**: After making any code changes, always run `npm run build` to update the production build in `/dist`. The build does not happen automatically.
+## Deployment Workflow
+
+**CRITICAL**: After making ANY code changes, you MUST automatically build and push to GitHub. Follow these steps in order:
+
+1. **Build**: `npm run build` - Updates the production build in `/dist`
+2. **Stage**: `git add .` - Stages all changed files
+3. **Commit**: `git commit -m "Description of changes"` - Creates a commit with a clear message
+4. **Push**: `git push` - Pushes to GitHub (updates GitHub Pages automatically)
+
+**This workflow is mandatory for every code change** - the build and git push do not happen automatically. Always run all four commands after editing source code.
