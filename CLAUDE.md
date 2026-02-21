@@ -38,7 +38,7 @@ npm run build   # Production build
 **CRITICAL**: After making ANY code changes, you MUST follow these steps in order:
 
 1. **Update timestamp**: Edit the `LAST_UPDATED` constant at the top of `src/App.jsx` with the current date and time in Central Time (format: `YYYY-MM-DD HH:MM AM/PM CT`). This is displayed in the Debug menu.
-2. **Build**: `npm run build` - Updates the production build in `/dist`
+2. **Build**: `npm run build` - Updates the production build in `/docs`
 3. **Stage**: `git add .` - Stages all changed files
 4. **Commit**: `git commit -m "Description of changes"` - Creates a commit with a clear message
 5. **Push**: `git push` - Pushes to GitHub (updates GitHub Pages automatically)
