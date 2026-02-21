@@ -716,6 +716,19 @@ function App() {
     setElapsedMinutes(firstIncompleteTask.pausedElapsed || 0)
   }, [firstIncompleteTask, timeOffset])
 
+  const shouldSuppressAutoStart = () => {
+    const now = getCurrentTimeMinutes() + timeOffset
+    const today = getTodayStr()
+    const minFrag = settings.minFragmentMinutes || 5
+    return events
+      .filter(e => e.date === today)
+      .some(e => {
+        const eStart = timeToMinutes(e.start)
+        const eEnd = timeToMinutes(e.end)
+        return (now >= eStart && now < eEnd) || (eStart > now && eStart - now <= minFrag)
+      })
+  }
+
   const completeActiveTask = useCallback(() => {
     if (!activeTaskId) return
     pushUndo()
@@ -735,7 +748,7 @@ function App() {
           pauseEvents: [],
         }
       })
-      if (settings.autoStartNext) {
+      if (settings.autoStartNext && !shouldSuppressAutoStart()) {
         const next = updated.find(t => !t.completed)
         if (next) {
           const pausedMs = (next.pausedElapsed || 0) * 60000
@@ -776,7 +789,7 @@ function App() {
       }
       return updated
     })
-  }, [activeTaskId, pushUndo, settings.autoStartNext, timeOffset])
+  }, [activeTaskId, pushUndo, settings.autoStartNext, events, timeOffset])
 
   const pauseActiveTask = useCallback(() => {
     if (!activeTaskId) return
@@ -920,7 +933,7 @@ function App() {
       })
 
       // Auto-start next task when completing active task via checkbox
-      if (isActive && settings.autoStartNext) {
+      if (isActive && settings.autoStartNext && !shouldSuppressAutoStart()) {
         const next = updated.find(t => !t.completed)
         if (next) {
           const pausedMs = (next.pausedElapsed || 0) * 60000
