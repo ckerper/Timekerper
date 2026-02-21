@@ -7,6 +7,10 @@ import {
 } from './scheduler'
 import './App.css'
 
+// ─── Last Updated Timestamp ─────────────────────────────────────────────────
+// IMPORTANT: Update this timestamp every time you make changes to the code
+const LAST_UPDATED = '2026-02-21 12:55 PM CT'
+
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
 function hexToRgb(hex) {
@@ -2339,6 +2343,9 @@ function App() {
                   </p>
                 </div>
               )}
+              <p className="settings-hint" style={{ marginTop: '1rem', fontSize: '0.85em', opacity: 0.7 }}>
+                Last updated: {LAST_UPDATED}
+              </p>
             </div>
 
             <div className="settings-section">

@@ -35,11 +35,12 @@ npm run build   # Production build
 
 ## Deployment Workflow
 
-**CRITICAL**: After making ANY code changes, you MUST automatically build and push to GitHub. Follow these steps in order:
+**CRITICAL**: After making ANY code changes, you MUST follow these steps in order:
 
-1. **Build**: `npm run build` - Updates the production build in `/dist`
-2. **Stage**: `git add .` - Stages all changed files
-3. **Commit**: `git commit -m "Description of changes"` - Creates a commit with a clear message
-4. **Push**: `git push` - Pushes to GitHub (updates GitHub Pages automatically)
+1. **Update timestamp**: Edit the `LAST_UPDATED` constant at the top of `src/App.jsx` with the current date and time in Central Time (format: `YYYY-MM-DD HH:MM AM/PM CT`). This is displayed in the Debug menu.
+2. **Build**: `npm run build` - Updates the production build in `/dist`
+3. **Stage**: `git add .` - Stages all changed files
+4. **Commit**: `git commit -m "Description of changes"` - Creates a commit with a clear message
+5. **Push**: `git push` - Pushes to GitHub (updates GitHub Pages automatically)
 
-**This workflow is mandatory for every code change** - the build and git push do not happen automatically. Always run all four commands after editing source code.
+**These steps are mandatory for every code change** - the timestamp update, build, and git push do not happen automatically. Always run all five steps after editing source code.
