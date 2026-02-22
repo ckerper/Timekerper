@@ -61,6 +61,24 @@ struct TaskFormSheet: View {
                     TagSelector(selectedTagId: $tagId)
                 }
 
+                if isEditing {
+                    Section {
+                        Button(role: .destructive) {
+                            if let task = appState.editingTask {
+                                appState.deleteTask(id: task.id)
+                            }
+                            appState.editingTask = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text("Delete Task")
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+
                 // Add to Top button (add mode only)
                 if !isEditing {
                     Section {

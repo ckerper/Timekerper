@@ -60,6 +60,24 @@ struct EventFormSheet: View {
                 Section("Tag") {
                     TagSelector(selectedTagId: $tagId)
                 }
+
+                if isEditing {
+                    Section {
+                        Button(role: .destructive) {
+                            if let event = appState.editingEvent {
+                                appState.deleteEvent(id: event.id)
+                            }
+                            appState.editingEvent = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text("Delete Event")
+                                Spacer()
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle(isEditing ? "Edit Event" : "Add Event")
             .navigationBarTitleDisplayMode(.inline)
