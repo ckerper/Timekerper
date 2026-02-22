@@ -41,8 +41,10 @@ struct SettingsView: View {
             // Working Hours
             workingHoursSection
 
-            // Extended View Hours
-            extendedHoursSection
+            // Extended View Hours (only when specifying working hours)
+            if appState.settings.specifyWorkingHours {
+                extendedHoursSection
+            }
 
             // Defaults
             defaultsSection
@@ -71,14 +73,21 @@ struct SettingsView: View {
 
     private var workingHoursSection: some View {
         Section("Working Hours") {
-            timePicker(label: "Start", value: Binding(
-                get: { appState.settings.workdayStart },
-                set: { appState.settings.workdayStart = $0 }
+            Toggle("Specify working hours", isOn: Binding(
+                get: { appState.settings.specifyWorkingHours },
+                set: { appState.settings.specifyWorkingHours = $0 }
             ))
-            timePicker(label: "End", value: Binding(
-                get: { appState.settings.workdayEnd },
-                set: { appState.settings.workdayEnd = ($0 == "00:00") ? "23:59" : $0 }
-            ))
+
+            if appState.settings.specifyWorkingHours {
+                timePicker(label: "Start", value: Binding(
+                    get: { appState.settings.workdayStart },
+                    set: { appState.settings.workdayStart = $0 }
+                ))
+                timePicker(label: "End", value: Binding(
+                    get: { appState.settings.workdayEnd == "23:59" ? "00:00" : appState.settings.workdayEnd },
+                    set: { appState.settings.workdayEnd = ($0 == "00:00") ? "23:59" : $0 }
+                ))
+            }
         }
     }
 
@@ -97,7 +106,7 @@ struct SettingsView: View {
                     set: { appState.settings.extendedStart = $0 }
                 ))
                 timePicker(label: "Extended End", value: Binding(
-                    get: { appState.settings.extendedEnd },
+                    get: { appState.settings.extendedEnd == "23:59" ? "00:00" : appState.settings.extendedEnd },
                     set: { appState.settings.extendedEnd = ($0 == "00:00") ? "23:59" : $0 }
                 ))
             }
@@ -190,10 +199,12 @@ struct SettingsView: View {
                 get: { appState.settings.wrapListNames },
                 set: { appState.settings.wrapListNames = $0 }
             ))
-            Toggle("Restrict tasks to work hours", isOn: Binding(
-                get: { appState.settings.restrictTasksToWorkHours },
-                set: { appState.settings.restrictTasksToWorkHours = $0 }
-            ))
+            if appState.settings.specifyWorkingHours {
+                Toggle("Restrict tasks to work hours", isOn: Binding(
+                    get: { appState.settings.restrictTasksToWorkHours },
+                    set: { appState.settings.restrictTasksToWorkHours = $0 }
+                ))
+            }
             Picker("Dark mode", selection: Binding(
                 get: { appState.settings.darkMode },
                 set: { appState.settings.darkMode = $0 }
@@ -396,43 +407,10 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Time Picker Helper (15-minute increments)
-
-    private static let quarterHourTimes: [String] = {
-        var times: [String] = []
-        for h in 0..<24 {
-            for q in [0, 15, 30, 45] {
-                times.append(String(format: "%02d:%02d", h, q))
-            }
-        }
-        return times
-    }()
+    // MARK: - Time Picker Helper (hour + minute wheels, 15-min increments)
 
     private func timePicker(label: String, value: Binding<String>) -> some View {
-        Picker(label, selection: Binding(
-            get: {
-                // Snap current value to nearest 15-min increment
-                let parts = value.wrappedValue.split(separator: ":").compactMap { Int($0) }
-                guard parts.count == 2 else { return "09:00" }
-                let snapped = (parts[1] / 15) * 15
-                return String(format: "%02d:%02d", parts[0], snapped)
-            },
-            set: { value.wrappedValue = $0 }
-        )) {
-            ForEach(Self.quarterHourTimes, id: \.self) { time in
-                Text(formatTimeLabel(time)).tag(time)
-            }
-        }
-    }
-
-    private func formatTimeLabel(_ time: String) -> String {
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        guard parts.count == 2 else { return time }
-        let h = parts[0]
-        let m = parts[1]
-        let suffix = h < 12 ? "AM" : "PM"
-        let displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h)
-        return m == 0 ? "\(displayH) \(suffix)" : "\(displayH):\(String(format: "%02d", m)) \(suffix)"
+        TimeWheelPicker(label: label, value: value)
     }
 }
 

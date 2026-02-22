@@ -19,6 +19,7 @@ struct AppSettings: Codable, Equatable, Sendable {
     var calendarFontSize: String = "medium"
     var wrapListNames: Bool = true
     var restrictTasksToWorkHours: Bool = true
+    var specifyWorkingHours: Bool = true
     var debugMode: Bool = false
     var debugTimeOffset: Int = 0
 
@@ -57,6 +58,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         calendarFontSize = try c.decodeIfPresent(String.self, forKey: .calendarFontSize) ?? "medium"
         wrapListNames = try c.decodeIfPresent(Bool.self, forKey: .wrapListNames) ?? true
         restrictTasksToWorkHours = try c.decodeIfPresent(Bool.self, forKey: .restrictTasksToWorkHours) ?? true
+        specifyWorkingHours = try c.decodeIfPresent(Bool.self, forKey: .specifyWorkingHours) ?? true
         debugMode = try c.decodeIfPresent(Bool.self, forKey: .debugMode) ?? false
         debugTimeOffset = try c.decodeIfPresent(Int.self, forKey: .debugTimeOffset) ?? 0
     }

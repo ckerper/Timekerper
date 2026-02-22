@@ -106,8 +106,10 @@ enum Scheduler {
         let extEndMin = DateTimeUtils.timeToMinutes(settings.extendedEnd)
         let workdayStartMin = DateTimeUtils.timeToMinutes(settings.workdayStart)
         let workdayEndMin = DateTimeUtils.timeToMinutes(settings.workdayEnd)
-        let taskStartMin = settings.restrictTasksToWorkHours ? workdayStartMin : extStartMin
-        let taskEndMin = settings.restrictTasksToWorkHours ? workdayEndMin : extEndMin
+        let taskStartMin = !settings.specifyWorkingHours ? 0
+            : settings.restrictTasksToWorkHours ? workdayStartMin : extStartMin
+        let taskEndMin = !settings.specifyWorkingHours ? 1439
+            : settings.restrictTasksToWorkHours ? workdayEndMin : extEndMin
         let debugOffset = settings.debugMode ? settings.debugTimeOffset : 0
         let currentTimeMin = DateTimeUtils.currentTimeMinutes() + debugOffset
 

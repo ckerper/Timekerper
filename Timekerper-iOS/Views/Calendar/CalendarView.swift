@@ -12,6 +12,7 @@ struct CalendarView: View {
     // Visible range respects useExtendedHours toggle.
     // Uses effectiveExtended* which clamp to always encompass working hours.
     private var viewStartMin: Int {
+        guard appState.settings.specifyWorkingHours else { return 0 }
         let raw = appState.settings.useExtendedHours
             ? DateTimeUtils.timeToMinutes(appState.settings.effectiveExtendedStart)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayStart)
@@ -19,14 +20,21 @@ struct CalendarView: View {
         return (raw / 60) * 60
     }
     private var viewEndMin: Int {
+        guard appState.settings.specifyWorkingHours else { return 1439 }
         let raw = appState.settings.useExtendedHours
             ? DateTimeUtils.timeToMinutes(appState.settings.effectiveExtendedEnd)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayEnd)
         // Ceil to the next hour so the last hour line always shows
         return min(((raw + 59) / 60) * 60, 1439)
     }
-    private var workStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayStart) }
-    private var workEndMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayEnd) }
+    private var workStartMin: Int {
+        appState.settings.specifyWorkingHours
+            ? DateTimeUtils.timeToMinutes(appState.settings.workdayStart) : 0
+    }
+    private var workEndMin: Int {
+        appState.settings.specifyWorkingHours
+            ? DateTimeUtils.timeToMinutes(appState.settings.workdayEnd) : 1439
+    }
     private var totalVisibleMinutes: Int { max(1, viewEndMin - viewStartMin) }
 
     private var pixelsPerMinute: CGFloat {
@@ -178,7 +186,7 @@ struct CalendarView: View {
         contentWidth: CGFloat
     ) -> some View {
         Group {
-            if appState.settings.useExtendedHours {
+            if appState.settings.specifyWorkingHours && appState.settings.useExtendedHours {
                 dimZones(contentWidth: contentWidth)
             }
             hourLines(contentWidth: contentWidth)
