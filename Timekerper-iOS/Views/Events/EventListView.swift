@@ -79,6 +79,9 @@ struct EventListView: View {
                         Section {
                             ForEach(group.events) { event in
                                 EventRowView(event: event)
+                                    .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                             }
                         } header: {
                             Text(DateTimeUtils.formatDateHeader(group.date))
@@ -89,6 +92,7 @@ struct EventListView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
 
             // Bulk entry

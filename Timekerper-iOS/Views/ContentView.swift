@@ -25,6 +25,11 @@ struct ContentView: View {
 
 struct CalendarTab: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var warmBackground: Color {
+        colorScheme == .dark ? Color(.systemBackground) : Color(red: 0.98, green: 0.975, blue: 0.96)
+    }
 
     var body: some View {
         NavigationStack {
@@ -32,6 +37,7 @@ struct CalendarTab: View {
                 ActiveTaskBar()
                 CalendarView()
             }
+            .background(warmBackground)
             .navigationTitle(DateTimeUtils.formatDateHeaderCompact(appState.selectedDate))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -125,10 +131,16 @@ struct CalendarTab: View {
 
 struct TasksTab: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var warmBackground: Color {
+        colorScheme == .dark ? Color(.systemBackground) : Color(red: 0.98, green: 0.975, blue: 0.96)
+    }
 
     var body: some View {
         NavigationStack {
             TaskListView()
+                .background(warmBackground)
                 .navigationTitle("Tasks")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
@@ -155,10 +167,16 @@ struct TasksTab: View {
 
 struct EventsTab: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var warmBackground: Color {
+        colorScheme == .dark ? Color(.systemBackground) : Color(red: 0.98, green: 0.975, blue: 0.96)
+    }
 
     var body: some View {
         NavigationStack {
             EventListView()
+                .background(warmBackground)
                 .navigationTitle("Events")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {

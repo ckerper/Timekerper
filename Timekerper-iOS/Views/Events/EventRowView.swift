@@ -23,12 +23,13 @@ struct EventRowView: View {
             if let tag = tag {
                 Circle()
                     .fill(Color(hex: tag.color))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 10, height: 10)
             }
 
             // Name
             Text(event.name)
                 .font(.subheadline)
+                .fontWeight(.semibold)
                 .foregroundStyle(isPast ? .secondary : .primary)
                 .lineLimit(2)
 
@@ -47,11 +48,18 @@ struct EventRowView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemGray6))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture {
             appState.editingEvent = event
             appState.showEventSheet = true
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
     }
 }

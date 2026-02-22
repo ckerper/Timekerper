@@ -38,6 +38,7 @@ struct CalendarBlockView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     private var isDark: Bool { colorScheme == .dark }
+    @State private var isPressed = false
 
     var body: some View {
         Group {
@@ -51,7 +52,15 @@ struct CalendarBlockView: View {
             }
         }
         .frame(width: blockWidth, height: blockHeight)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .opacity(isPressed ? 0.85 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
         .contentShape(Rectangle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
         .onTapGesture {
             handleTap()
         }
@@ -63,10 +72,10 @@ struct CalendarBlockView: View {
         ZStack(alignment: .topLeading) {
             // Background with subtle border for visual separation
             RoundedRectangle(cornerRadius: 4)
-                .fill(ColorUtils.blendWithSurface(hex: tagColor, alpha: 0.1, isDarkMode: isDark))
+                .fill(ColorUtils.blendWithSurface(hex: tagColor, alpha: 0.25, isDarkMode: isDark))
                 .overlay {
                     RoundedRectangle(cornerRadius: 4)
-                        .strokeBorder(Color(hex: tagColor).opacity(0.25), lineWidth: 1)
+                        .strokeBorder(Color(hex: tagColor).opacity(0.35), lineWidth: 1)
                 }
                 .overlay(alignment: .leading) {
                     // Thick left border
@@ -94,7 +103,7 @@ struct CalendarBlockView: View {
                     HStack(spacing: 4) {
                         Text(block.name)
                             .font(.system(size: fontSize(.title)))
-                            .fontWeight(.medium)
+                            .fontWeight(.semibold)
                             .lineLimit(1)
                             .strikethrough(block.isCompleted)
                         if !isTiny {
@@ -107,7 +116,7 @@ struct CalendarBlockView: View {
                 } else {
                     Text(block.name)
                         .font(.system(size: fontSize(.title)))
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
                         .lineLimit(2)
                         .strikethrough(block.isCompleted)
                     Text(DateTimeUtils.formatBlockTimeRange(
@@ -139,7 +148,7 @@ struct CalendarBlockView: View {
                     HStack(spacing: 4) {
                         Text(block.name)
                             .font(.system(size: fontSize(.title)))
-                            .fontWeight(.medium)
+                            .fontWeight(.semibold)
                             .lineLimit(1)
                         if !isTiny {
                             Text(DateTimeUtils.formatBlockTimeRange(
@@ -150,7 +159,7 @@ struct CalendarBlockView: View {
                 } else {
                     Text(block.name)
                         .font(.system(size: fontSize(.title)))
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
                         .lineLimit(2)
                     Text(DateTimeUtils.formatBlockTimeRange(
                         start: block.start, end: block.end, isTask: false))

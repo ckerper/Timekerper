@@ -26,14 +26,14 @@ struct TaskRowView: View {
             if let tag = tag {
                 Circle()
                     .fill(Color(hex: tag.color))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 10, height: 10)
             }
 
             // Name
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.name)
                     .font(.subheadline)
-                    .fontWeight(isActive ? .semibold : .regular)
+                    .fontWeight(.semibold)
                     .strikethrough(task.completed)
                     .foregroundStyle(task.completed ? .secondary : .primary)
                     .lineLimit(appState.settings.wrapListNames ? 3 : 1)
@@ -57,10 +57,11 @@ struct TaskRowView: View {
             // Duration badge
             Text(DateTimeUtils.formatElapsed(task.effectiveDuration))
                 .font(.caption)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.gray.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .fontWeight(.medium)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.gray.opacity(0.18))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .foregroundStyle(.secondary)
 
             // Play/pause (incomplete tasks on today only)
@@ -100,11 +101,18 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemGray6))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture {
             appState.editingTask = task
             appState.showTaskSheet = true
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
     }
 }

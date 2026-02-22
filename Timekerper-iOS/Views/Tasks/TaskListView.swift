@@ -38,6 +38,9 @@ struct TaskListView: View {
                 List {
                     ForEach(visibleTasks) { task in
                         TaskRowView(task: task)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                     }
                     .onMove { source, destination in
                         // Map filtered indices back to actual indices if needed
@@ -68,6 +71,7 @@ struct TaskListView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .environment(\.editMode, .constant(.active))
             }
 

@@ -26,7 +26,7 @@ enum ColorUtils {
     /// Returns a SwiftUI Color.
     static func blendWithSurface(hex: String, alpha: Double, isDarkMode: Bool) -> Color {
         let c = hexToRgb(hex)
-        let bg = isDarkMode ? RGB(r: 30, g: 41, b: 59) : RGB(r: 255, g: 255, b: 255)
+        let bg = isDarkMode ? RGB(r: 30, g: 41, b: 59) : RGB(r: 250, g: 249, b: 245)
         let r = c.r * alpha + bg.r * (1 - alpha)
         let g = c.g * alpha + bg.g * (1 - alpha)
         let b = c.b * alpha + bg.b * (1 - alpha)
@@ -37,7 +37,7 @@ enum ColorUtils {
     /// blockOpacity is the alpha used for the block background.
     static func textColor(hex: String, blockOpacity: Double, isDarkMode: Bool) -> Color {
         let c = hexToRgb(hex)
-        let bg = isDarkMode ? RGB(r: 30, g: 41, b: 59) : RGB(r: 255, g: 255, b: 255)
+        let bg = isDarkMode ? RGB(r: 30, g: 41, b: 59) : RGB(r: 250, g: 249, b: 245)
         let effR = c.r * blockOpacity + bg.r * (1 - blockOpacity)
         let effG = c.g * blockOpacity + bg.g * (1 - blockOpacity)
         let effB = c.b * blockOpacity + bg.b * (1 - blockOpacity)
@@ -50,7 +50,7 @@ enum ColorUtils {
     static func blockBackground(hex: String, type: BlockType, isDarkMode: Bool) -> Color {
         switch type {
         case .task:
-            return blendWithSurface(hex: hex, alpha: 0.1, isDarkMode: isDarkMode)
+            return blendWithSurface(hex: hex, alpha: 0.25, isDarkMode: isDarkMode)
         case .event:
             return Color(hex: hex)
         case .pause:
@@ -62,7 +62,7 @@ enum ColorUtils {
     static func blockTextColor(hex: String, type: BlockType, isDarkMode: Bool) -> Color {
         switch type {
         case .task:
-            return textColor(hex: hex, blockOpacity: 0.1, isDarkMode: isDarkMode)
+            return textColor(hex: hex, blockOpacity: 0.25, isDarkMode: isDarkMode)
         case .event:
             return textColor(hex: hex, blockOpacity: 1.0, isDarkMode: isDarkMode)
         case .pause:
