@@ -8,7 +8,10 @@ struct TimekerperApp: App {
         WindowGroup {
             ContentView()
                 .environment(appState)
-                .preferredColorScheme(appState.settings.darkMode ? .dark : .light)
+                .preferredColorScheme(
+                    appState.settings.darkMode == "on" ? .dark :
+                    appState.settings.darkMode == "off" ? .light : nil
+                )
         }
     }
 }

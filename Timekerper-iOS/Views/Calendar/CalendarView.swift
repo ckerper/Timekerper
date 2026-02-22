@@ -101,12 +101,16 @@ struct CalendarView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             let targetHour: Int
                             if appState.isToday {
-                                targetHour = max(appState.currentTimeMinutes / 60 - 1, startHour)
+                                // Scroll to current hour, positioned at 1/3 of viewport
+                                targetHour = max(appState.currentTimeMinutes / 60, startHour)
                             } else {
                                 targetHour = max(workStartMin / 60, startHour)
                             }
+                            let anchor: UnitPoint = appState.isToday
+                                ? UnitPoint(x: 0.5, y: 0.33)
+                                : .top
                             withAnimation(.easeOut(duration: 0.3)) {
-                                proxy.scrollTo("hour-\(targetHour)", anchor: .top)
+                                proxy.scrollTo("hour-\(targetHour)", anchor: anchor)
                             }
                         }
                     }
@@ -281,8 +285,9 @@ struct CalendarView: View {
 
     private func blockXOffset(block: Block, contentWidth: CGFloat) -> CGFloat {
         guard block.type == .event && block.totalColumns > 1 else { return 0 }
-        let colWidth = contentWidth / CGFloat(block.totalColumns)
-        return colWidth * CGFloat(block.column)
+        let gap: CGFloat = 2
+        let colWidth = (contentWidth - gap * CGFloat(block.totalColumns - 1)) / CGFloat(block.totalColumns)
+        return (colWidth + gap) * CGFloat(block.column)
     }
 
     private func formatHourLabel(_ hour: Int) -> String {

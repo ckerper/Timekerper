@@ -18,15 +18,11 @@ struct TagEditorView: View {
                     set: { appState.updateTag(id: tag.id, name: $0) }
                 ))
                 .font(.subheadline)
-
-                Spacer()
-
-                Button(action: { appState.deleteTag(id: tag.id) }) {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundStyle(.red.opacity(0.7))
-                }
-                .buttonStyle(.plain)
+            }
+        }
+        .onDelete { offsets in
+            for idx in offsets {
+                appState.deleteTag(id: appState.tags[idx].id)
             }
         }
         .onMove { source, destination in

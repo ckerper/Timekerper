@@ -6,20 +6,28 @@ struct TagSelector: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                // No tag option
+            HStack(alignment: .top, spacing: 10) {
+                // No tag option — wrapped in VStack with hidden label for alignment
                 Button(action: { selectedTagId = nil }) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.gray.opacity(0.4), lineWidth: selectedTagId == nil ? 2 : 1)
-                            .frame(width: 28, height: 28)
-                        Image(systemName: "xmark")
-                            .font(.caption2)
+                    VStack(spacing: 2) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.gray.opacity(0.4), lineWidth: selectedTagId == nil ? 2 : 1)
+                                .frame(width: 28, height: 28)
+                            Image(systemName: "xmark")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Text("None")
+                            .font(.system(size: 9))
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: 50)
                     }
                 }
                 .buttonStyle(.plain)
                 .scaleEffect(selectedTagId == nil ? 1.15 : 1.0)
+                .animation(.easeInOut(duration: 0.1), value: selectedTagId)
 
                 // Tag circles
                 ForEach(appState.tags) { tag in

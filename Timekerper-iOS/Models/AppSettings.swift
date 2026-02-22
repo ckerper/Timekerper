@@ -7,7 +7,7 @@ struct AppSettings: Codable, Equatable, Sendable {
     var extendedStart: String = "06:00"
     var extendedEnd: String = "23:59"
     var autoStartNext: Bool = false
-    var darkMode: Bool = false
+    var darkMode: String = "system"  // "on", "off", "system"
     var zoomLevel: Double = 1.5
     var fitMode: Bool = true
     var smartDuration: Bool = true
@@ -23,7 +23,7 @@ struct AppSettings: Codable, Equatable, Sendable {
     var debugTimeOffset: Int = 0
 
     static let localOnlyKeys: Set<String> = [
-        "zoomLevel", "fitMode", "debugMode", "debugTimeOffset"
+        "zoomLevel", "fitMode", "debugMode", "debugTimeOffset", "darkMode"
     ]
 
     // Custom decoder: provide defaults for any missing keys (especially local-only
@@ -38,7 +38,14 @@ struct AppSettings: Codable, Equatable, Sendable {
         let rawExtendedEnd = try c.decodeIfPresent(String.self, forKey: .extendedEnd) ?? "23:59"
         extendedEnd = rawExtendedEnd == "00:00" ? "23:59" : rawExtendedEnd
         autoStartNext = try c.decodeIfPresent(Bool.self, forKey: .autoStartNext) ?? false
-        darkMode = try c.decodeIfPresent(Bool.self, forKey: .darkMode) ?? false
+        // Migration: old data stores Bool, new data stores String
+        if let str = try? c.decodeIfPresent(String.self, forKey: .darkMode) {
+            darkMode = str
+        } else if let oldBool = try? c.decodeIfPresent(Bool.self, forKey: .darkMode) {
+            darkMode = oldBool ? "on" : "system"
+        } else {
+            darkMode = "system"
+        }
         zoomLevel = try c.decodeIfPresent(Double.self, forKey: .zoomLevel) ?? 1.5
         fitMode = try c.decodeIfPresent(Bool.self, forKey: .fitMode) ?? true
         smartDuration = try c.decodeIfPresent(Bool.self, forKey: .smartDuration) ?? true
@@ -77,6 +84,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         copy.fitMode = true
         copy.debugMode = false
         copy.debugTimeOffset = 0
+        copy.darkMode = "system"
         return copy
     }
 
@@ -87,6 +95,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         merged.fitMode = self.fitMode
         merged.debugMode = self.debugMode
         merged.debugTimeOffset = self.debugTimeOffset
+        merged.darkMode = self.darkMode
         return merged
     }
 }

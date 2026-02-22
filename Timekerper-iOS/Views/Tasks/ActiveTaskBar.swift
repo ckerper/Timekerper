@@ -29,17 +29,28 @@ struct ActiveTaskBar: View {
         .padding(.bottom, 10)
     }
 
+    // MARK: - Gradient helper
+
+    private func barGradient(for task: TaskItem?) -> LinearGradient {
+        let hex = taskBarColor(for: task)
+        return LinearGradient(
+            colors: [Color(hex: hex), Color(hex: hex).opacity(0.85)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private func taskBarColor(for task: TaskItem?) -> String {
+        guard let task = task else { return appState.settings.defaultTaskColor }
+        return appState.colorForTag(task.tagId, defaultColor: appState.settings.defaultTaskColor)
+    }
+
     // MARK: - Active Task Running
 
     private func activeView(task: TaskItem) -> some View {
-        VStack(spacing: 8) {
-            // Task name and timer
+        VStack(spacing: 6) {
+            // Row 1: Name + Timer
             HStack {
-                if let tag = appState.tagForId(task.tagId) {
-                    Circle()
-                        .fill(Color(hex: tag.color))
-                        .frame(width: 10, height: 10)
-                }
                 Text(task.name)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -48,70 +59,85 @@ struct ActiveTaskBar: View {
 
                 Spacer()
 
-                // Timer display
                 let elapsed = appState.elapsedMinutes
                 let estimate = task.effectiveDuration
                 let isOver = elapsed > estimate
                 Text("\(DateTimeUtils.formatElapsed(elapsed)) / \(DateTimeUtils.formatElapsed(estimate))")
-                    .font(.subheadline.monospacedDigit())
+                    .font(.caption.monospacedDigit())
                     .fontWeight(.medium)
                     .foregroundStyle(isOver ? Color.red : .white)
             }
 
-            // Adjust and action buttons
-            HStack(spacing: 8) {
-                // Duration adjustments
-                Group {
-                    Button("-15") { appState.adjustTaskTime(-15) }
-                    Button("-5") { appState.adjustTaskTime(-5) }
-                    Button("+5") { appState.adjustTaskTime(5) }
-                    Button("+15") { appState.adjustTaskTime(15) }
+            // Row 2: [-] [1m|5m|15m] [+]  [actions]
+            HStack(spacing: 6) {
+                // Minus button
+                Button(action: { appState.adjustTaskTime(-appState.adjustIncrement) }) {
+                    Image(systemName: "minus")
+                        .font(.caption2.weight(.semibold))
                 }
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .frame(width: 26, height: 26)
                 .background(Color.white.opacity(0.15))
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .clipShape(Circle())
+
+                // Increment picker
+                Picker("", selection: Binding(
+                    get: { appState.adjustIncrement },
+                    set: { appState.adjustIncrement = $0 }
+                )) {
+                    Text("1m").tag(1)
+                    Text("5m").tag(5)
+                    Text("15m").tag(15)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 120)
+                .scaleEffect(0.8)
+
+                // Plus button
+                Button(action: { appState.adjustTaskTime(appState.adjustIncrement) }) {
+                    Image(systemName: "plus")
+                        .font(.caption2.weight(.semibold))
+                }
+                .frame(width: 26, height: 26)
+                .background(Color.white.opacity(0.15))
+                .foregroundStyle(.white)
+                .clipShape(Circle())
 
                 Spacer()
 
-                Button(action: { appState.completeActiveTask() }) {
-                    Image(systemName: "checkmark")
-                        .font(.caption.weight(.semibold))
-                }
-                .padding(8)
-                .background(Color.green)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                // Action buttons
+                HStack(spacing: 6) {
+                    Button(action: { appState.completeActiveTask() }) {
+                        Image(systemName: "checkmark")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.green)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
 
-                Button(action: { appState.pauseActiveTask() }) {
-                    Image(systemName: "pause.fill")
-                        .font(.caption.weight(.semibold))
-                }
-                .padding(8)
-                .background(Color.orange)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                    Button(action: { appState.pauseActiveTask() }) {
+                        Image(systemName: "pause.fill")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.orange)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
 
-                Button(action: { appState.cancelActiveTask() }) {
-                    Image(systemName: "xmark")
-                        .font(.caption.weight(.semibold))
+                    Button(action: { appState.cancelActiveTask() }) {
+                        Image(systemName: "xmark")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.red.opacity(0.8))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
-                .padding(8)
-                .background(Color.red.opacity(0.8))
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
             }
         }
-        .padding(12)
-        .background(
-            LinearGradient(
-                colors: [Color(hex: "#7c3aed"), Color(hex: "#6d28d9")],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
+        .padding(10)
+        .background(barGradient(for: task))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
     }
@@ -120,12 +146,6 @@ struct ActiveTaskBar: View {
 
     private func idleView(task: TaskItem) -> some View {
         HStack {
-            if let tag = appState.tagForId(task.tagId) {
-                Circle()
-                    .fill(Color(hex: tag.color))
-                    .frame(width: 10, height: 10)
-            }
-
             let isPaused = task.pausedElapsed > 0
             Text(isPaused ? "Resume:" : "Next:")
                 .font(.subheadline)
@@ -154,13 +174,7 @@ struct ActiveTaskBar: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .padding(12)
-        .background(
-            LinearGradient(
-                colors: [Color(hex: "#7c3aed"), Color(hex: "#6d28d9")],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
+        .background(barGradient(for: task))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
     }
@@ -178,13 +192,7 @@ struct ActiveTaskBar: View {
             Spacer()
         }
         .padding(12)
-        .background(
-            LinearGradient(
-                colors: [Color(hex: "#7c3aed"), Color(hex: "#6d28d9")],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
+        .background(barGradient(for: nil))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
     }

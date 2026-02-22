@@ -37,15 +37,15 @@ struct EventFormSheet: View {
                         }
 
                     // Quick duration buttons
-                    HStack(spacing: 12) {
-                        ForEach([30, 60, 90], id: \.self) { mins in
-                            Button("\(mins)m") {
+                    HStack(spacing: 8) {
+                        ForEach([15, 30, 45, 60, 90, 120], id: \.self) { mins in
+                            Button(DateTimeUtils.formatElapsed(mins)) {
                                 endTime = startTime.addingTimeInterval(Double(mins) * 60)
                                 endManuallySet = true
                             }
                             .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(Color.gray.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
@@ -111,7 +111,7 @@ struct EventFormSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 
     // MARK: - Helpers

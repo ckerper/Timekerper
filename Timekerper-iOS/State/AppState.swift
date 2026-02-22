@@ -47,6 +47,9 @@ final class AppState {
     var showSettingsSheet = false
     var editingTask: TaskItem?
     var editingEvent: EventItem?
+    var adjustIncrement: Int = 5 {
+        didSet { PersistenceService.save(adjustIncrement, key: "adjustIncrement") }
+    }
     var hideCompleted = false
     var hidePastEvents = false
 
@@ -148,6 +151,11 @@ final class AppState {
                 self.taskStartTime = Date().addingTimeInterval(-Double(elapsed) * 60)
                 self.elapsedMinutes = elapsed
             }
+        }
+
+        // Restore adjust increment
+        if let savedIncrement = PersistenceService.load(key: "adjustIncrement", as: Int.self) {
+            self.adjustIncrement = savedIncrement
         }
 
         // Restore sync credentials

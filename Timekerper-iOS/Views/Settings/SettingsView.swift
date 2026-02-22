@@ -194,10 +194,15 @@ struct SettingsView: View {
                 get: { appState.settings.restrictTasksToWorkHours },
                 set: { appState.settings.restrictTasksToWorkHours = $0 }
             ))
-            Toggle("Dark mode", isOn: Binding(
+            Picker("Dark mode", selection: Binding(
                 get: { appState.settings.darkMode },
                 set: { appState.settings.darkMode = $0 }
-            ))
+            )) {
+                Text("Off").tag("off")
+                Text("System").tag("system")
+                Text("On").tag("on")
+            }
+            .pickerStyle(.segmented)
         }
     }
 
@@ -207,6 +212,7 @@ struct SettingsView: View {
         Section("Tags") {
             TagEditorView()
         }
+        .environment(\.editMode, .constant(.active))
     }
 
     // MARK: - Sync
@@ -354,8 +360,25 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Text("Last build: \(Self.buildDateString)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
+
+    private static let buildDateString: String = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        // __DATE__ and __TIME__ aren't available in Swift; use executable modification date
+        if let execURL = Bundle.main.executableURL,
+           let attrs = try? FileManager.default.attributesOfItem(atPath: execURL.path),
+           let date = attrs[.modificationDate] as? Date {
+            return formatter.string(from: date)
+        }
+        return "Unknown"
+    }()
 
     // MARK: - Transfer
 
@@ -373,28 +396,43 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Time Picker Helper
+    // MARK: - Time Picker Helper (15-minute increments)
+
+    private static let quarterHourTimes: [String] = {
+        var times: [String] = []
+        for h in 0..<24 {
+            for q in [0, 15, 30, 45] {
+                times.append(String(format: "%02d:%02d", h, q))
+            }
+        }
+        return times
+    }()
 
     private func timePicker(label: String, value: Binding<String>) -> some View {
-        DatePicker(
-            label,
-            selection: Binding(
-                get: {
-                    let parts = value.wrappedValue.split(separator: ":").compactMap { Int($0) }
-                    guard parts.count == 2 else { return Date() }
-                    var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-                    components.hour = parts[0]
-                    components.minute = parts[1]
-                    return Calendar.current.date(from: components) ?? Date()
-                },
-                set: { date in
-                    let h = Calendar.current.component(.hour, from: date)
-                    let m = Calendar.current.component(.minute, from: date)
-                    value.wrappedValue = String(format: "%02d:%02d", h, m)
-                }
-            ),
-            displayedComponents: .hourAndMinute
-        )
+        Picker(label, selection: Binding(
+            get: {
+                // Snap current value to nearest 15-min increment
+                let parts = value.wrappedValue.split(separator: ":").compactMap { Int($0) }
+                guard parts.count == 2 else { return "09:00" }
+                let snapped = (parts[1] / 15) * 15
+                return String(format: "%02d:%02d", parts[0], snapped)
+            },
+            set: { value.wrappedValue = $0 }
+        )) {
+            ForEach(Self.quarterHourTimes, id: \.self) { time in
+                Text(formatTimeLabel(time)).tag(time)
+            }
+        }
+    }
+
+    private func formatTimeLabel(_ time: String) -> String {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return time }
+        let h = parts[0]
+        let m = parts[1]
+        let suffix = h < 12 ? "AM" : "PM"
+        let displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        return m == 0 ? "\(displayH) \(suffix)" : "\(displayH):\(String(format: "%02d", m)) \(suffix)"
     }
 }
 

@@ -14,7 +14,8 @@ struct CalendarBlockView: View {
 
     private var blockWidth: CGFloat {
         if block.type == .event && block.totalColumns > 1 {
-            return (contentWidth / CGFloat(block.totalColumns)) - 2
+            let gap: CGFloat = 2
+            return (contentWidth - gap * CGFloat(block.totalColumns - 1)) / CGFloat(block.totalColumns)
         }
         return contentWidth - 4
     }
@@ -28,7 +29,8 @@ struct CalendarBlockView: View {
             : appState.settings.defaultTaskColor)
     }
 
-    private var isDark: Bool { appState.settings.darkMode }
+    @Environment(\.colorScheme) private var colorScheme
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         Group {
@@ -120,6 +122,10 @@ struct CalendarBlockView: View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 4)
                 .fill(Color(hex: tagColor))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 4)
+                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                }
 
             VStack(alignment: .leading, spacing: 1) {
                 if isCompact {

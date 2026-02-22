@@ -7,7 +7,6 @@ struct TaskFormSheet: View {
     @State private var name: String = ""
     @State private var duration: Int = 30
     @State private var tagId: Int?
-    @State private var addToTop: Bool = false
 
     private var isEditing: Bool { appState.editingTask != nil }
 
@@ -20,10 +19,15 @@ struct TaskFormSheet: View {
                         TextField("Task name", text: $name)
                             .textInputAutocapitalization(.sentences)
                     } else {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("One task per line. Append a number for duration (e.g. \"Review doc 45\")")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
+                        ZStack(alignment: .topLeading) {
+                            if name.isEmpty {
+                                Text("One task per line. Append a number for duration (e.g. \"Review doc 45\")")
+                                    .font(.body)
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 5)
+                                    .allowsHitTesting(false)
+                            }
                             TextEditor(text: $name)
                                 .frame(minHeight: 80)
                                 .textInputAutocapitalization(.sentences)
@@ -57,10 +61,19 @@ struct TaskFormSheet: View {
                     TagSelector(selectedTagId: $tagId)
                 }
 
-                // Options (add mode only)
+                // Add to Top button (add mode only)
                 if !isEditing {
                     Section {
-                        Toggle("Add to top of list", isOn: $addToTop)
+                        Button(action: {
+                            saveAndDismiss(addToTop: true)
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.up.to.line")
+                                Text("Add to Top")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
             }
@@ -72,16 +85,7 @@ struct TaskFormSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        appState.saveTask(
-                            name: name,
-                            duration: duration,
-                            tagId: tagId,
-                            editing: appState.editingTask,
-                            addToTop: addToTop,
-                            smartParse: !isEditing && appState.settings.smartDuration
-                        )
-                        appState.editingTask = nil
-                        dismiss()
+                        saveAndDismiss(addToTop: false)
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -95,10 +99,22 @@ struct TaskFormSheet: View {
                     name = ""
                     duration = appState.settings.defaultTaskDuration
                     tagId = nil
-                    addToTop = false
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
+    }
+
+    private func saveAndDismiss(addToTop: Bool) {
+        appState.saveTask(
+            name: name,
+            duration: duration,
+            tagId: tagId,
+            editing: appState.editingTask,
+            addToTop: addToTop,
+            smartParse: !isEditing && appState.settings.smartDuration
+        )
+        appState.editingTask = nil
+        dismiss()
     }
 }
