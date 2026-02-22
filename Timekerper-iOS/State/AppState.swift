@@ -74,6 +74,7 @@ final class AppState {
     // MARK: - Timer
 
     private var timer: Timer?
+    private var syncPullTimer: Timer?
 
     // MARK: - Computed
 
@@ -145,7 +146,18 @@ final class AppState {
             }
         }
 
+        // Restore sync credentials
+        if let pat = KeychainService.load(key: "pat"),
+           let gistId = PersistenceService.load(key: "syncGistId", as: String.self),
+           let enabled = PersistenceService.load(key: "syncEnabled", as: Bool.self),
+           enabled, !pat.isEmpty, !gistId.isEmpty {
+            self.syncPat = pat
+            self.syncGistId = gistId
+            self.syncEnabled = true
+        }
+
         startTimer()
+        startSyncPullTimer()
     }
 
     // MARK: - Timer Management
@@ -157,6 +169,17 @@ final class AppState {
             self?.tick()
         }
         RunLoop.current.add(timer!, forMode: .common)
+    }
+
+    private func startSyncPullTimer() {
+        syncPullTimer?.invalidate()
+        guard syncEnabled else { return }
+        syncPullTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.doPull()
+            }
+        }
+        RunLoop.current.add(syncPullTimer!, forMode: .common)
     }
 
     private func tick() {
