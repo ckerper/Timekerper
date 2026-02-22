@@ -75,32 +75,29 @@ struct ActiveTaskBar: View {
 
                 Spacer()
 
-                Button("Done") {
-                    appState.completeActiveTask()
+                Button(action: { appState.completeActiveTask() }) {
+                    Image(systemName: "checkmark")
+                        .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
+                .padding(8)
                 .background(Color.green)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
-                Button("Pause") {
-                    appState.pauseActiveTask()
+                Button(action: { appState.pauseActiveTask() }) {
+                    Image(systemName: "pause.fill")
+                        .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
+                .padding(8)
                 .background(Color.orange)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
-                Button("Cancel") {
-                    appState.cancelActiveTask()
+                Button(action: { appState.cancelActiveTask() }) {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
+                .padding(8)
                 .background(Color.red.opacity(0.8))
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
