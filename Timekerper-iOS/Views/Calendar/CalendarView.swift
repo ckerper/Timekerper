@@ -71,26 +71,19 @@ struct CalendarView: View {
                         }
                         .frame(width: 1)
 
-                        // === Static scaffolding (stays in place) ===
-                        if appState.settings.useExtendedHours {
-                            dimZones(contentWidth: contentWidth)
-                        }
-                        hourLines(contentWidth: contentWidth)
-                        timeLabels()
-
-                        // === Current day blocks (moves with drag) ===
-                        dayBlocks(
+                        // === Current day (moves with drag) ===
+                        dayContent(
                             blocks: appState.scheduledBlocks,
                             showNowLine: appState.isToday,
                             contentWidth: contentWidth
                         )
                         .offset(x: dragOffset)
 
-                        // === Incoming day blocks (adjacent, only during drag) ===
+                        // === Incoming day (adjacent, only during drag) ===
                         if isDraggingHorizontally && dragOffset != 0 {
                             let incomingDateStr = incomingDate
                             let incomingIsToday = incomingDateStr == DateTimeUtils.todayStr()
-                            dayBlocks(
+                            dayContent(
                                 blocks: appState.blocksForDate(incomingDateStr),
                                 showNowLine: incomingIsToday,
                                 contentWidth: contentWidth
@@ -172,15 +165,21 @@ struct CalendarView: View {
         )
     }
 
-    // MARK: - Day Blocks (per-day content that moves with swipe)
+    // MARK: - Day Content (everything that swipes with the day)
 
     @ViewBuilder
-    private func dayBlocks(
+    private func dayContent(
         blocks: [Block],
         showNowLine: Bool,
         contentWidth: CGFloat
     ) -> some View {
         Group {
+            if appState.settings.useExtendedHours {
+                dimZones(contentWidth: contentWidth)
+            }
+            hourLines(contentWidth: contentWidth)
+            timeLabels()
+
             ForEach(blocks) { block in
                 CalendarBlockView(block: block, contentWidth: contentWidth)
                     .offset(
