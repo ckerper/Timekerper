@@ -5,6 +5,7 @@ struct CalendarView: View {
     @State private var hasScrolled = false
     @State private var dragOffset: CGFloat = 0
     @State private var isDraggingHorizontally: Bool = false
+    @State private var baseZoomLevel: Double = 1.5
 
     // Top padding so the first time label (offset y: -7) isn't clipped
     private let topInset: CGFloat = 10
@@ -175,6 +176,20 @@ struct CalendarView: View {
                     }
                 }
         )
+        // Pinch to zoom
+        .simultaneousGesture(
+            MagnificationGesture()
+                .onChanged { scale in
+                    let newZoom = baseZoomLevel * scale
+                    appState.settings.zoomLevel = max(0.5, min(3.0, newZoom))
+                }
+                .onEnded { _ in
+                    baseZoomLevel = appState.settings.zoomLevel
+                }
+        )
+        .onAppear {
+            baseZoomLevel = appState.settings.zoomLevel
+        }
     }
 
     // MARK: - Day Content (everything that swipes with the day)

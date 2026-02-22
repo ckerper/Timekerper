@@ -163,23 +163,6 @@ struct SettingsView: View {
                 Text("Extra Large").tag("xlarge")
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Zoom")
-                    Spacer()
-                    Text("\(Int(appState.settings.zoomLevel * 100))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-                Slider(
-                    value: Binding(
-                        get: { appState.settings.zoomLevel },
-                        set: { appState.settings.zoomLevel = $0 }
-                    ),
-                    in: 0.5...3.0,
-                    step: 0.25
-                )
-            }
         }
     }
 
