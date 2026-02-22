@@ -58,12 +58,16 @@ struct CalendarBlockView: View {
         .contentShape(Rectangle())
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
+                .onChanged { _ in
+                    if !isPressed { isPressed = true }
+                }
+                .onEnded { value in
+                    isPressed = false
+                    if abs(value.translation.width) < 10 && abs(value.translation.height) < 10 {
+                        handleTap()
+                    }
+                }
         )
-        .onTapGesture {
-            handleTap()
-        }
     }
 
     // MARK: - Task Block
