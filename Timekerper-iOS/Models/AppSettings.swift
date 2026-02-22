@@ -56,6 +56,20 @@ struct AppSettings: Codable, Equatable, Sendable {
 
     init() {}
 
+    /// Extended start clamped to always be at or before workday start.
+    var effectiveExtendedStart: String {
+        let ext = DateTimeUtils.timeToMinutes(extendedStart)
+        let work = DateTimeUtils.timeToMinutes(workdayStart)
+        return ext <= work ? extendedStart : workdayStart
+    }
+
+    /// Extended end clamped to always be at or after workday end.
+    var effectiveExtendedEnd: String {
+        let ext = DateTimeUtils.timeToMinutes(extendedEnd)
+        let work = DateTimeUtils.timeToMinutes(workdayEnd)
+        return ext >= work ? extendedEnd : workdayEnd
+    }
+
     /// Returns a copy with local-only keys reset to defaults for sync/export.
     func strippingLocalOnly() -> AppSettings {
         var copy = self

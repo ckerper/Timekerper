@@ -7,17 +7,18 @@ struct CalendarView: View {
     // Zoom levels matching web
     private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
 
-    // Visible range respects useExtendedHours toggle
+    // Visible range respects useExtendedHours toggle.
+    // Uses effectiveExtended* which clamp to always encompass working hours.
     private var viewStartMin: Int {
         let raw = appState.settings.useExtendedHours
-            ? DateTimeUtils.timeToMinutes(appState.settings.extendedStart)
+            ? DateTimeUtils.timeToMinutes(appState.settings.effectiveExtendedStart)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayStart)
         // Floor to the hour so the first hour line always shows
         return (raw / 60) * 60
     }
     private var viewEndMin: Int {
         let raw = appState.settings.useExtendedHours
-            ? DateTimeUtils.timeToMinutes(appState.settings.extendedEnd)
+            ? DateTimeUtils.timeToMinutes(appState.settings.effectiveExtendedEnd)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayEnd)
         // Ceil to the next hour so the last hour line always shows
         return min(((raw + 59) / 60) * 60, 1439)
