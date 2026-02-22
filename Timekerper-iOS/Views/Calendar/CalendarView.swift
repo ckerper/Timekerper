@@ -54,8 +54,8 @@ struct CalendarView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let contentWidth = geo.size.width - gridLeftPadding - 40
-            let screenWidth = geo.size.width
+            let screenWidth = UIScreen.main.bounds.width
+            let contentWidth = screenWidth - gridLeftPadding - 10
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
@@ -117,7 +117,6 @@ struct CalendarView: View {
                 }
             }
         }
-        .padding(.trailing, 8)
         // Swipe left/right to change days — follows finger, shows incoming day
         .simultaneousGesture(
             DragGesture(minimumDistance: 20, coordinateSpace: .local)
