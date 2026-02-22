@@ -9,14 +9,18 @@ struct CalendarView: View {
 
     // Visible range respects useExtendedHours toggle
     private var viewStartMin: Int {
-        appState.settings.useExtendedHours
+        let raw = appState.settings.useExtendedHours
             ? DateTimeUtils.timeToMinutes(appState.settings.extendedStart)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayStart)
+        // Floor to the hour so the first hour line always shows
+        return (raw / 60) * 60
     }
     private var viewEndMin: Int {
-        appState.settings.useExtendedHours
+        let raw = appState.settings.useExtendedHours
             ? DateTimeUtils.timeToMinutes(appState.settings.extendedEnd)
             : DateTimeUtils.timeToMinutes(appState.settings.workdayEnd)
+        // Ceil to the next hour so the last hour line always shows
+        return min(((raw + 59) / 60) * 60, 1439)
     }
     private var workStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayStart) }
     private var workEndMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayEnd) }
@@ -30,16 +34,14 @@ struct CalendarView: View {
         CGFloat(totalVisibleMinutes) * pixelsPerMinute
     }
 
-    private let timeLabelWidth: CGFloat = 38
-    private let gridLeftPadding: CGFloat = 40
+    private let gridLeftPadding: CGFloat = 32
 
     private var startHour: Int { viewStartMin / 60 }
-    // +1 ensures the final hour line is drawn when viewEndMin falls exactly on an hour boundary
     private var endHour: Int { (viewEndMin / 60) + 1 }
 
     var body: some View {
         GeometryReader { geo in
-            let contentWidth = geo.size.width - gridLeftPadding
+            let contentWidth = geo.size.width - gridLeftPadding - 4
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
@@ -152,8 +154,7 @@ struct CalendarView: View {
                 Text(formatHourLabel(hour))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .frame(width: timeLabelWidth, alignment: .trailing)
-                    .offset(x: 0, y: yForMinute(minute) - 7)
+                    .offset(x: 2, y: yForMinute(minute) - 7)
             }
         }
     }

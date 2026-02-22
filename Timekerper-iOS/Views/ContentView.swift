@@ -72,6 +72,7 @@ struct CalendarTab: View {
                     }
                 }
             }
+            .toolbarBackground(.visible, for: .navigationBar)
             .sheet(isPresented: Binding(
                 get: { appState.showSettingsSheet },
                 set: { appState.showSettingsSheet = $0 }
