@@ -20,7 +20,7 @@ struct CalendarView: View {
     }
     private var workStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayStart) }
     private var workEndMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayEnd) }
-    private var totalVisibleMinutes: Int { viewEndMin - viewStartMin }
+    private var totalVisibleMinutes: Int { max(1, viewEndMin - viewStartMin) }
 
     private var pixelsPerMinute: CGFloat {
         CGFloat(appState.settings.zoomLevel) * 1.5

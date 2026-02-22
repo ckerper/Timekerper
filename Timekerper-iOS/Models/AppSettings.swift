@@ -31,10 +31,12 @@ struct AppSettings: Codable, Equatable, Sendable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         workdayStart = try c.decodeIfPresent(String.self, forKey: .workdayStart) ?? "09:00"
-        workdayEnd = try c.decodeIfPresent(String.self, forKey: .workdayEnd) ?? "17:00"
+        let rawWorkdayEnd = try c.decodeIfPresent(String.self, forKey: .workdayEnd) ?? "17:00"
+        workdayEnd = rawWorkdayEnd == "00:00" ? "23:59" : rawWorkdayEnd
         useExtendedHours = try c.decodeIfPresent(Bool.self, forKey: .useExtendedHours) ?? true
         extendedStart = try c.decodeIfPresent(String.self, forKey: .extendedStart) ?? "06:00"
-        extendedEnd = try c.decodeIfPresent(String.self, forKey: .extendedEnd) ?? "23:59"
+        let rawExtendedEnd = try c.decodeIfPresent(String.self, forKey: .extendedEnd) ?? "23:59"
+        extendedEnd = rawExtendedEnd == "00:00" ? "23:59" : rawExtendedEnd
         autoStartNext = try c.decodeIfPresent(Bool.self, forKey: .autoStartNext) ?? false
         darkMode = try c.decodeIfPresent(Bool.self, forKey: .darkMode) ?? false
         zoomLevel = try c.decodeIfPresent(Double.self, forKey: .zoomLevel) ?? 1.5

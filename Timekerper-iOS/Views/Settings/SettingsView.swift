@@ -77,7 +77,7 @@ struct SettingsView: View {
             ))
             timePicker(label: "End", value: Binding(
                 get: { appState.settings.workdayEnd },
-                set: { appState.settings.workdayEnd = $0 }
+                set: { appState.settings.workdayEnd = ($0 == "00:00") ? "23:59" : $0 }
             ))
         }
     }
@@ -98,7 +98,7 @@ struct SettingsView: View {
                 ))
                 timePicker(label: "Extended End", value: Binding(
                     get: { appState.settings.extendedEnd },
-                    set: { appState.settings.extendedEnd = $0 }
+                    set: { appState.settings.extendedEnd = ($0 == "00:00") ? "23:59" : $0 }
                 ))
             }
         }
