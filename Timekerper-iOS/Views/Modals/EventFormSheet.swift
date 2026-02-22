@@ -10,6 +10,7 @@ struct EventFormSheet: View {
     @State private var eventDate: Date = Date()
     @State private var tagId: Int?
     @State private var endManuallySet: Bool = false
+    @State private var isAdjustingEnd: Bool = false
 
     private var isEditing: Bool { appState.editingEvent != nil }
 
@@ -26,6 +27,7 @@ struct EventFormSheet: View {
                         .onChange(of: startTime) { oldValue, newValue in
                             if !endManuallySet {
                                 // Maintain duration when start changes
+                                isAdjustingEnd = true
                                 let delta = newValue.timeIntervalSince(oldValue)
                                 endTime = endTime.addingTimeInterval(delta)
                             }
@@ -33,7 +35,11 @@ struct EventFormSheet: View {
 
                     DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
                         .onChange(of: endTime) { _, _ in
-                            endManuallySet = true
+                            if isAdjustingEnd {
+                                isAdjustingEnd = false
+                            } else {
+                                endManuallySet = true
+                            }
                         }
 
                     // Quick duration buttons
@@ -69,7 +75,13 @@ struct EventFormSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         let startStr = timeToString(startTime)
-                        let endStr = timeToString(endTime)
+                        var endStr = timeToString(endTime)
+                        // If end <= start, force end = start + default duration
+                        let startMins = DateTimeUtils.timeToMinutes(startStr)
+                        let endMins = DateTimeUtils.timeToMinutes(endStr)
+                        if endMins <= startMins {
+                            endStr = DateTimeUtils.minutesToTime(startMins + appState.settings.defaultEventDuration)
+                        }
                         let dateStr = dateToString(eventDate)
                         appState.saveEvent(
                             name: name,

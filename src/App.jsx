@@ -10,7 +10,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-21 1:17 PM CT'
+const LAST_UPDATED = '2026-02-22 12:00 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -1044,11 +1044,16 @@ function App() {
 
   const saveEvent = () => {
     const name = eventName.trim() || 'Event'
+    // If end <= start, force end = start + default duration
+    let finalEnd = eventEnd
+    if (timeToMinutes(eventEnd) <= timeToMinutes(eventStart)) {
+      finalEnd = minutesToTime(timeToMinutes(eventStart) + settings.defaultEventDuration)
+    }
     pushUndo()
     if (editingEvent) {
       setEvents(prev => prev.map(e =>
         e.id === editingEvent.id
-          ? { ...e, name, start: eventStart, end: eventEnd, tagId: eventTag, date: eventDate }
+          ? { ...e, name, start: eventStart, end: finalEnd, tagId: eventTag, date: eventDate }
           : e
       ))
     } else {
@@ -1056,7 +1061,7 @@ function App() {
         id: Date.now(),
         name,
         start: eventStart,
-        end: eventEnd,
+        end: finalEnd,
         tagId: eventTag,
         date: eventDate,
       }])
