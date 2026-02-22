@@ -4,6 +4,10 @@ struct CalendarView: View {
     @Environment(AppState.self) private var appState
     @State private var hasScrolled = false
     @State private var dragOffset: CGFloat = 0
+    @State private var isDraggingHorizontally: Bool = false
+
+    // Top padding so the first time label (offset y: -7) isn't clipped
+    private let topInset: CGFloat = 10
 
     // Zoom levels matching web
     private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
@@ -53,6 +57,7 @@ struct CalendarView: View {
                         // Invisible hour anchors for ScrollViewReader scroll-to support.
                         // Uses VStack so each cell has a real layout position (unlike .offset).
                         VStack(spacing: 0) {
+                            Color.clear.frame(height: topInset)
                             ForEach(startHour..<endHour, id: \.self) { hour in
                                 Color.clear
                                     .frame(height: 60 * pixelsPerMinute)
@@ -77,7 +82,7 @@ struct CalendarView: View {
                             CalendarBlockView(block: block, contentWidth: contentWidth)
                                 .offset(
                                     x: gridLeftPadding + blockXOffset(block: block, contentWidth: contentWidth),
-                                    y: yForMinute(block.startMin)
+                                    y: topInset + yForMinute(block.startMin)
                                 )
                         }
 
@@ -86,8 +91,7 @@ struct CalendarView: View {
                             nowLine(contentWidth: contentWidth)
                         }
                     }
-                    .frame(width: geo.size.width, height: totalHeight)
-                    .clipped()
+                    .frame(width: geo.size.width, height: totalHeight + topInset)
                 }
                 .contentMargins(0, for: .scrollContent)
                 .onAppear {
@@ -109,39 +113,52 @@ struct CalendarView: View {
             }
         }
         .offset(x: dragOffset)
-        // Swipe left/right to change days with animation
-        .gesture(
-            DragGesture(minimumDistance: 30, coordinateSpace: .local)
+        // Swipe left/right to change days — follows finger in real-time
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
                 .onChanged { value in
-                    // Only track horizontal movement when clearly horizontal
-                    if abs(value.translation.width) > abs(value.translation.height) {
-                        dragOffset = value.translation.width * 0.4
+                    // Lock in direction on first significant movement
+                    if !isDraggingHorizontally {
+                        if abs(value.translation.width) > 15 &&
+                           abs(value.translation.width) > abs(value.translation.height) * 1.5 {
+                            isDraggingHorizontally = true
+                        }
+                    }
+                    if isDraggingHorizontally {
+                        dragOffset = value.translation.width
                     }
                 }
                 .onEnded { value in
-                    let threshold: CGFloat = 50
-                    if abs(value.translation.width) > abs(value.translation.height),
-                       abs(value.translation.width) > threshold {
+                    guard isDraggingHorizontally else {
+                        isDraggingHorizontally = false
+                        return
+                    }
+                    isDraggingHorizontally = false
+                    let screenWidth = UIScreen.main.bounds.width
+                    let threshold: CGFloat = screenWidth * 0.2
+                    let velocity = value.predictedEndTranslation.width - value.translation.width
+
+                    if abs(value.translation.width) > threshold || abs(velocity) > 200 {
                         let goingLeft = value.translation.width < 0
-                        // Slide off screen in swipe direction
-                        withAnimation(.easeIn(duration: 0.15)) {
-                            dragOffset = goingLeft ? -UIScreen.main.bounds.width * 0.3 : UIScreen.main.bounds.width * 0.3
+                        // Animate off-screen
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            dragOffset = goingLeft ? -screenWidth : screenWidth
                         }
-                        // Change day and slide in from opposite side
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                             if goingLeft {
                                 appState.goToNextDay()
                             } else {
                                 appState.goToPreviousDay()
                             }
-                            dragOffset = goingLeft ? UIScreen.main.bounds.width * 0.3 : -UIScreen.main.bounds.width * 0.3
-                            withAnimation(.easeOut(duration: 0.15)) {
+                            // Jump to opposite side and slide in
+                            dragOffset = goingLeft ? screenWidth : -screenWidth
+                            withAnimation(.easeOut(duration: 0.2)) {
                                 dragOffset = 0
                             }
                         }
                     } else {
                         // Snap back
-                        withAnimation(.easeOut(duration: 0.2)) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             dragOffset = 0
                         }
                     }
@@ -160,7 +177,7 @@ struct CalendarView: View {
             Rectangle()
                 .fill(dimColor)
                 .frame(width: contentWidth, height: yForMinute(workStartMin))
-                .offset(x: gridLeftPadding, y: 0)
+                .offset(x: gridLeftPadding, y: topInset)
         }
 
         // After working hours
@@ -168,7 +185,7 @@ struct CalendarView: View {
             Rectangle()
                 .fill(dimColor)
                 .frame(width: contentWidth, height: yForMinute(viewEndMin) - yForMinute(workEndMin))
-                .offset(x: gridLeftPadding, y: yForMinute(workEndMin))
+                .offset(x: gridLeftPadding, y: topInset + yForMinute(workEndMin))
         }
     }
 
@@ -182,7 +199,7 @@ struct CalendarView: View {
                 Rectangle()
                     .fill(Color.gray.opacity(0.15))
                     .frame(width: contentWidth, height: 1)
-                    .offset(x: gridLeftPadding, y: yForMinute(minute))
+                    .offset(x: gridLeftPadding, y: topInset + yForMinute(minute))
             }
         }
     }
@@ -197,8 +214,8 @@ struct CalendarView: View {
                 Text(formatHourLabel(hour))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .frame(width: gridLeftPadding - 4, alignment: .trailing)
-                    .offset(x: 0, y: yForMinute(minute) - 7)
+                    .fixedSize()
+                    .offset(x: 2, y: topInset + yForMinute(minute) - 7)
             }
         }
     }
@@ -224,7 +241,7 @@ struct CalendarView: View {
                     .foregroundStyle(.red)
                     .offset(x: contentWidth - 24)
             }
-            .offset(x: gridLeftPadding, y: yForMinute(nowMin) - 1)
+            .offset(x: gridLeftPadding, y: topInset + yForMinute(nowMin) - 1)
         }
     }
 
