@@ -54,7 +54,7 @@ struct CalendarView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let contentWidth = geo.size.width - gridLeftPadding - 6
+            let contentWidth = geo.size.width - gridLeftPadding - 40
             let screenWidth = geo.size.width
 
             ScrollViewReader { proxy in
@@ -248,7 +248,7 @@ struct CalendarView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                    .offset(x: 2, y: topInset + yForMinute(minute) - 7)
+                    .offset(x: 0, y: topInset + yForMinute(minute) - 7)
             }
         }
     }
