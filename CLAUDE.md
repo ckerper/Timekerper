@@ -43,4 +43,4 @@ npm run build   # Production build
 4. **Commit**: `git commit -m "Description of changes"` - Creates a commit with a clear message
 5. **Push**: `git push` - Pushes to GitHub (updates GitHub Pages automatically)
 
-**These steps are mandatory for every code change** - the timestamp update, build, and git push do not happen automatically. Always run all five steps after editing source code.
+**These steps are mandatory for every code change** - the timestamp update, build, and git push do not happen automatically. Always run all five steps after editing source code. After pushing, always explicitly confirm to the user that you've committed and pushed to main (e.g., "Committed and pushed to `main`.").
