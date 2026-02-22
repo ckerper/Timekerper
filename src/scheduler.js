@@ -624,7 +624,7 @@ export function scheduleDay(tasks, events, settings, activeTaskId, totalElapsed,
   }
 
   // Add completed tasks that were actually worked on (filtered by date)
-  const completedTasks = tasks.filter(t => t.completed && t.startedAtMin != null && t.actualDuration > 0)
+  const completedTasks = tasks.filter(t => t.completed && t.startedAtMin != null && t.actualDuration >= 2)
   for (const task of completedTasks) {
     const segments = task.workSegments || []
     if (segments.length > 0) {

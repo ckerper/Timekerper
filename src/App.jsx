@@ -10,7 +10,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-22 12:05 PM CT'
+const LAST_UPDATED = '2026-02-22 3:30 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -1099,11 +1099,16 @@ function App() {
   const clearPastEvents = useCallback(() => {
     pushUndo()
     setEvents(prev => prev.filter(e => {
-      if (e.date !== selectedDate) return true
-      const isPast = isToday ? timeToMinutes(e.end) <= currentTime : selectedDate < todayStr
-      return !isPast
+      // Remove events on days before the viewed day
+      if (e.date < selectedDate) return false
+      // On the viewed day: remove past events
+      if (e.date === selectedDate) {
+        if (selectedDate < todayStr) return false
+        if (selectedDate === todayStr) return timeToMinutes(e.end) > currentTime
+      }
+      return true
     }))
-  }, [pushUndo, selectedDate, isToday, currentTime, todayStr])
+  }, [pushUndo, selectedDate, currentTime, todayStr])
 
   // ── Handlers: Drag and Drop ───────────────────────────────────────────────
 

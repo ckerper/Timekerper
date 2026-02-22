@@ -195,9 +195,9 @@ struct CalendarBlockView: View {
     private func fontSize(_ role: FontRole) -> CGFloat {
         let sizes: [String: (title: CGFloat, time: CGFloat)] = [
             "small": (10, 8),
-            "medium": (11.5, 9.5),
-            "large": (13.5, 11),
-            "xlarge": (15.5, 12.5),
+            "medium": (12, 10),
+            "large": (15, 12.5),
+            "xlarge": (19, 15),
         ]
         let pair = sizes[appState.settings.calendarFontSize] ?? sizes["medium"]!
         return role == .title ? pair.title : pair.time

@@ -100,10 +100,11 @@ struct CalendarView: View {
                             .offset(x: dragOffset + (dragOffset < 0 ? screenWidth : -screenWidth))
                         }
                     }
-                    .frame(width: screenWidth, height: totalHeight + topInset, alignment: .topLeading)
+                    .frame(width: screenWidth, height: totalHeight + topInset + 14, alignment: .topLeading)
                     .clipped()
                 }
                 .contentMargins(0, for: .scrollContent)
+                .scrollDisabled(isDraggingHorizontally)
                 .onAppear {
                     if !hasScrolled {
                         hasScrolled = true

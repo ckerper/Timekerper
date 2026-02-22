@@ -51,6 +51,7 @@ struct EventFormSheet: View {
                         durationButton(90)
                         durationButton(120)
                     }
+                    .buttonStyle(.borderless)
                 }
 
                 Section("Date") {

@@ -264,6 +264,43 @@ final class AppState {
         startTimer() // Switch to 1s interval
     }
 
+    func startSpecificTask(id: Int) {
+        guard let taskIdx = tasks.firstIndex(where: { $0.id == id && !$0.completed }) else { return }
+
+        // If a different task is already active, pause it first
+        if activeTaskId != nil && activeTaskId != id {
+            pauseActiveTask()
+        }
+
+        // If this task is already active, do nothing
+        if activeTaskId == id { return }
+
+        let task = tasks[taskIdx]
+        let pausedMs = Double(task.pausedElapsed) * 60
+        let now = DateTimeUtils.currentTimeMinutes() + timeOffset
+
+        var t = tasks[taskIdx]
+        if t.startedAtMin == nil {
+            t.startedAtMin = now
+            t.startedAtDate = DateTimeUtils.todayStr()
+        }
+        if t.pausedAtMin != nil {
+            t.pauseGapMinutes = (t.pauseGapMinutes ?? 0) + max(0, now - (t.pausedAtMin ?? 0))
+            t.pausedAtMin = nil
+            if var pauseEvents = t.pauseEvents, !pauseEvents.isEmpty,
+               pauseEvents[pauseEvents.count - 1].end == nil {
+                pauseEvents[pauseEvents.count - 1].end = now
+                t.pauseEvents = pauseEvents
+            }
+        }
+        tasks[taskIdx] = t
+
+        activeTaskId = id
+        taskStartTime = Date().addingTimeInterval(-pausedMs)
+        elapsedMinutes = task.pausedElapsed
+        startTimer()
+    }
+
     func completeActiveTask() {
         guard let activeId = activeTaskId else { return }
         pushUndo()
@@ -561,9 +598,16 @@ final class AppState {
         let today = todayStr
         let now = currentTimeMinutes
         events.removeAll { e in
-            guard e.date == selectedDate else { return false }
-            let isPast = isToday ? DateTimeUtils.timeToMinutes(e.end) <= now : selectedDate < today
-            return isPast
+            // Remove all events on days before the viewed day
+            if e.date < selectedDate { return true }
+            // On the viewed day: remove past events
+            if e.date == selectedDate {
+                if selectedDate < today { return true }
+                if selectedDate == today {
+                    return DateTimeUtils.timeToMinutes(e.end) <= now
+                }
+            }
+            return false
         }
     }
 

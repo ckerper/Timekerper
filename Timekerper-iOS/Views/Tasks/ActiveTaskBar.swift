@@ -80,7 +80,7 @@ struct ActiveTaskBar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 4))
 
                     Button(action: { appState.cancelActiveTask() }) {
-                        Image(systemName: "xmark")
+                        Image(systemName: "arrow.counterclockwise")
                             .font(.caption.weight(.semibold))
                     }
                     .padding(6)

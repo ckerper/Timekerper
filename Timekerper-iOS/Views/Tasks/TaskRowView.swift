@@ -63,6 +63,25 @@ struct TaskRowView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .foregroundStyle(.secondary)
 
+            // Play/pause (incomplete tasks on today only)
+            if !task.completed && appState.isToday {
+                if isActive {
+                    Button(action: { appState.pauseActiveTask() }) {
+                        Image(systemName: "pause.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button(action: { appState.startSpecificTask(id: task.id) }) {
+                        Image(systemName: "play.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
             // Duplicate
             if !task.completed {
                 Button(action: { appState.duplicateTask(task) }) {

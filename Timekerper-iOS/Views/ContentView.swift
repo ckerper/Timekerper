@@ -67,6 +67,20 @@ struct CalendarTab: View {
                 }
 
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button(action: {
+                        appState.editingTask = nil
+                        appState.showTaskSheet = true
+                    }) {
+                        Image(systemName: "checklist.unchecked")
+                    }
+
+                    Button(action: {
+                        appState.editingEvent = nil
+                        appState.showEventSheet = true
+                    }) {
+                        Image(systemName: "clock.badge.plus")
+                    }
+
                     Button(action: { appState.showSettingsSheet = true }) {
                         Image(systemName: "gearshape")
                     }
@@ -78,6 +92,26 @@ struct CalendarTab: View {
                 set: { appState.showSettingsSheet = $0 }
             )) {
                 SettingsView()
+                    .preferredColorScheme(
+                        appState.settings.darkMode == "on" ? .dark :
+                        appState.settings.darkMode == "off" ? .light : nil
+                    )
+            }
+            .sheet(isPresented: Binding(
+                get: { appState.showTaskSheet },
+                set: { appState.showTaskSheet = $0 }
+            )) {
+                TaskFormSheet()
+                    .preferredColorScheme(
+                        appState.settings.darkMode == "on" ? .dark :
+                        appState.settings.darkMode == "off" ? .light : nil
+                    )
+            }
+            .sheet(isPresented: Binding(
+                get: { appState.showEventSheet },
+                set: { appState.showEventSheet = $0 }
+            )) {
+                EventFormSheet()
                     .preferredColorScheme(
                         appState.settings.darkMode == "on" ? .dark :
                         appState.settings.darkMode == "off" ? .light : nil
@@ -128,18 +162,6 @@ struct EventsTab: View {
                 .navigationTitle("Events")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        HStack(spacing: 12) {
-                            Button(action: appState.goToPreviousDay) {
-                                Image(systemName: "chevron.left")
-                            }
-                            Text(DateTimeUtils.formatShortDateHeader(appState.selectedDate))
-                                .font(.subheadline)
-                            Button(action: appState.goToNextDay) {
-                                Image(systemName: "chevron.right")
-                            }
-                        }
-                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(action: {
                             appState.editingEvent = nil

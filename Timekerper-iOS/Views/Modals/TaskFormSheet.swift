@@ -54,6 +54,7 @@ struct TaskFormSheet: View {
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                     }
+                    .buttonStyle(.borderless)
                 }
 
                 // Tag
@@ -79,19 +80,33 @@ struct TaskFormSheet: View {
                     }
                 }
 
-                // Add to Top button (add mode only)
+                // Add to Top / Add to Bottom buttons (add mode only)
                 if !isEditing {
                     Section {
-                        Button(action: {
-                            saveAndDismiss(addToTop: true)
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.up.to.line")
-                                Text("Add to Top")
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                saveAndDismiss(addToTop: true)
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.up.to.line")
+                                    Text("Add to Top")
+                                }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
+                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                            Button(action: {
+                                saveAndDismiss(addToTop: false)
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.down.to.line")
+                                    Text("Add to Bottom")
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .buttonStyle(.borderless)
                     }
                 }
             }
@@ -101,11 +116,13 @@ struct TaskFormSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveAndDismiss(addToTop: false)
+                if isEditing {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            saveAndDismiss(addToTop: false)
+                        }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .onAppear {

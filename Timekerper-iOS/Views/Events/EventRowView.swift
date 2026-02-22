@@ -9,9 +9,12 @@ struct EventRowView: View {
     }
 
     private var isPast: Bool {
-        appState.isToday
-            ? DateTimeUtils.timeToMinutes(event.end) <= appState.currentTimeMinutes
-            : appState.selectedDate < appState.todayStr
+        let today = appState.todayStr
+        if event.date < today { return true }
+        if event.date == today {
+            return DateTimeUtils.timeToMinutes(event.end) <= appState.currentTimeMinutes
+        }
+        return false
     }
 
     var body: some View {

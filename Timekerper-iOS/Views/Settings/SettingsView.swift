@@ -435,10 +435,11 @@ private struct TimeWheelPicker: View {
     var body: some View {
         let p = parsed
 
-        VStack(alignment: .leading, spacing: 4) {
+        HStack {
             Text(label)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+
+            Spacer()
 
             HStack(spacing: 0) {
                 // Hour wheel (1-12)
@@ -451,7 +452,7 @@ private struct TimeWheelPicker: View {
                     }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 60)
+                .frame(width: 50)
                 .clipped()
 
                 // Minute wheel (:00, :15, :30, :45)
@@ -464,7 +465,7 @@ private struct TimeWheelPicker: View {
                     }
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 70)
+                .frame(width: 60)
                 .clipped()
 
                 // AM/PM wheel
@@ -476,10 +477,10 @@ private struct TimeWheelPicker: View {
                     Text("PM").tag(false)
                 }
                 .pickerStyle(.wheel)
-                .frame(width: 60)
+                .frame(width: 50)
                 .clipped()
             }
-            .frame(height: 120)
+            .frame(height: 100)
         }
     }
 }

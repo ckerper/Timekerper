@@ -372,7 +372,7 @@ enum Scheduler {
         }
 
         // Add completed tasks that were actually worked on (filtered by date)
-        let completedTasks = tasks.filter { $0.completed && $0.startedAtMin != nil && ($0.actualDuration ?? 0) > 0 }
+        let completedTasks = tasks.filter { $0.completed && $0.startedAtMin != nil && ($0.actualDuration ?? 0) >= 2 }
         for task in completedTasks {
             let segments = task.workSegments ?? []
             if !segments.isEmpty {
