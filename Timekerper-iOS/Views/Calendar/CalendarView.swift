@@ -21,11 +21,12 @@ struct CalendarView: View {
         CGFloat(totalVisibleMinutes) * pixelsPerMinute
     }
 
-    private let timeLabelWidth: CGFloat = 52
-    private let gridLeftPadding: CGFloat = 56
+    private let timeLabelWidth: CGFloat = 38
+    private let gridLeftPadding: CGFloat = 40
 
     private var startHour: Int { extStartMin / 60 }
-    private var endHour: Int { (extEndMin + 59) / 60 }
+    // +1 ensures the final hour line is drawn when extEndMin falls exactly on an hour boundary
+    private var endHour: Int { (extEndMin / 60) + 1 }
 
     var body: some View {
         GeometryReader { geo in
@@ -69,8 +70,6 @@ struct CalendarView: View {
                         }
                     }
                     .frame(width: geo.size.width, height: totalHeight)
-                    // Small bottom padding so the last hour label isn't flush with the edge
-                    .padding(.bottom, 100)
                 }
                 .onAppear {
                     if !hasScrolled {
