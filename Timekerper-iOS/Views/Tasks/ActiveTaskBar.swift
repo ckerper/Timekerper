@@ -13,20 +13,20 @@ struct ActiveTaskBar: View {
     }
 
     var body: some View {
-        if appState.isToday {
-            VStack(spacing: 0) {
-                if let active = activeTask {
-                    activeView(task: active)
-                } else if let next = firstIncomplete {
+        VStack(spacing: 0) {
+            if let active = activeTask {
+                activeView(task: active)
+            } else if appState.isToday {
+                if let next = firstIncomplete {
                     idleView(task: next)
                 } else if !appState.tasks.isEmpty {
                     allDoneView
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
-            .padding(.bottom, 10)
         }
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Active Task Running
