@@ -59,7 +59,7 @@ struct EventListView: View {
 
                 Spacer()
 
-                Button(appState.hidePastEvents ? "Show past today" : "Hide past today") {
+                Button(appState.hidePastEvents ? "Show past" : "Hide past") {
                     appState.hidePastEvents.toggle()
                 }
                 .font(.caption)
