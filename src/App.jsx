@@ -296,6 +296,7 @@ function App() {
   const [syncConflict, setSyncConflict] = useState(null) // { pat, gistId } when existing gist found during connect
   const syncingRef = useRef(false)
   const suppressPushRef = useRef(false)
+  const dirtyRef = useRef(false)  // true when local has unpushed changes
 
   // ── Undo/Redo System ──────────────────────────────────────────────────────
 
@@ -1319,6 +1320,7 @@ function App() {
     try {
       const payload = buildPayload(tasksRef.current, eventsRef.current, tags, settings, activeTaskId)
       await pushToGist(syncPat, syncGistId, payload)
+      dirtyRef.current = false
       setLastSynced(new Date())
       setSyncStatus('idle')
       setSyncError(null)
@@ -1331,7 +1333,7 @@ function App() {
   }, [syncEnabled, syncGistId, syncPat, tags, settings, activeTaskId])
 
   const doPull = useCallback(async () => {
-    if (syncingRef.current || !syncEnabled || !syncGistId || !syncPat) return
+    if (dirtyRef.current || syncingRef.current || !syncEnabled || !syncGistId || !syncPat) return
     syncingRef.current = true
     setSyncStatus('syncing')
     try {
@@ -1418,6 +1420,7 @@ function App() {
   // Debounced push on state change
   useEffect(() => {
     if (!syncEnabled || suppressPushRef.current) return
+    dirtyRef.current = true
     const timer = setTimeout(() => {
       if (!suppressPushRef.current) doPush()
     }, 2000)
@@ -2610,7 +2613,7 @@ function App() {
                       {syncStatus === 'idle' && !lastSynced && 'Connected'}
                       {syncStatus === 'error' && 'Sync error'}
                     </span>
-                    <button className="btn-secondary sync-now-btn" onClick={async () => { await doPull(); await doPush() }}>Sync Now</button>
+                    <button className="btn-secondary sync-now-btn" onClick={async () => { await doPush(); await doPull() }}>Sync Now</button>
                   </div>
                   {syncStatus === 'error' && syncError && (
                     <p className="sync-error">{syncError}</p>
