@@ -95,13 +95,17 @@ final class AppState {
     }
 
     var scheduledBlocks: [Block] {
+        blocksForDate(selectedDate)
+    }
+
+    func blocksForDate(_ date: String) -> [Block] {
         Scheduler.scheduleDay(
             tasks: tasks,
             events: events,
             settings: settings,
             activeTaskId: activeTaskId,
             totalElapsed: elapsedMinutes,
-            selectedDate: selectedDate
+            selectedDate: date
         )
     }
 

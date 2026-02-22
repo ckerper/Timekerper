@@ -9,9 +9,6 @@ struct CalendarView: View {
     // Top padding so the first time label (offset y: -7) isn't clipped
     private let topInset: CGFloat = 10
 
-    // Zoom levels matching web
-    private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
-
     // Visible range respects useExtendedHours toggle.
     // Uses effectiveExtended* which clamp to always encompass working hours.
     private var viewStartMin: Int {
@@ -46,16 +43,24 @@ struct CalendarView: View {
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
 
+    /// The adjacent date that would slide in based on current drag direction
+    private var incomingDate: String {
+        if dragOffset < 0 {
+            return DateTimeUtils.addDays(appState.selectedDate, days: 1)
+        } else {
+            return DateTimeUtils.addDays(appState.selectedDate, days: -1)
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
-            // Right margin so blocks don't touch the screen edge
             let contentWidth = geo.size.width - gridLeftPadding - 16
+            let screenWidth = geo.size.width
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
                     ZStack(alignment: .topLeading) {
                         // Invisible hour anchors for ScrollViewReader scroll-to support.
-                        // Uses VStack so each cell has a real layout position (unlike .offset).
                         VStack(spacing: 0) {
                             Color.clear.frame(height: topInset)
                             ForEach(startHour..<endHour, id: \.self) { hour in
@@ -66,32 +71,30 @@ struct CalendarView: View {
                         }
                         .frame(width: 1)
 
-                        // Dim zones (outside working hours, only when extended hours are on)
-                        if appState.settings.useExtendedHours {
-                            dimZones(contentWidth: contentWidth)
-                        }
+                        // === Current day (moves with drag) ===
+                        calendarContent(
+                            blocks: appState.scheduledBlocks,
+                            showNowLine: appState.isToday,
+                            contentWidth: contentWidth,
+                            screenWidth: screenWidth
+                        )
+                        .offset(x: dragOffset)
 
-                        // Hour grid lines
-                        hourLines(contentWidth: contentWidth)
-
-                        // Time labels
-                        timeLabels()
-
-                        // Calendar blocks
-                        ForEach(appState.scheduledBlocks) { block in
-                            CalendarBlockView(block: block, contentWidth: contentWidth)
-                                .offset(
-                                    x: gridLeftPadding + blockXOffset(block: block, contentWidth: contentWidth),
-                                    y: topInset + yForMinute(block.startMin)
-                                )
-                        }
-
-                        // Now line (today only)
-                        if appState.isToday {
-                            nowLine(contentWidth: contentWidth)
+                        // === Incoming day (adjacent, only during drag) ===
+                        if isDraggingHorizontally && dragOffset != 0 {
+                            let incomingDateStr = incomingDate
+                            let incomingIsToday = incomingDateStr == DateTimeUtils.todayStr()
+                            calendarContent(
+                                blocks: appState.blocksForDate(incomingDateStr),
+                                showNowLine: incomingIsToday,
+                                contentWidth: contentWidth,
+                                screenWidth: screenWidth
+                            )
+                            .offset(x: dragOffset + (dragOffset < 0 ? screenWidth : -screenWidth))
                         }
                     }
-                    .frame(width: geo.size.width, height: totalHeight + topInset)
+                    .frame(width: screenWidth, height: totalHeight + topInset)
+                    .clipped()
                 }
                 .contentMargins(0, for: .scrollContent)
                 .onAppear {
@@ -112,12 +115,10 @@ struct CalendarView: View {
                 }
             }
         }
-        .offset(x: dragOffset)
-        // Swipe left/right to change days — follows finger in real-time
+        // Swipe left/right to change days — follows finger, shows incoming day
         .simultaneousGesture(
             DragGesture(minimumDistance: 20, coordinateSpace: .local)
                 .onChanged { value in
-                    // Lock in direction on first significant movement
                     if !isDraggingHorizontally {
                         if abs(value.translation.width) > 15 &&
                            abs(value.translation.width) > abs(value.translation.height) * 1.5 {
@@ -133,37 +134,75 @@ struct CalendarView: View {
                         isDraggingHorizontally = false
                         return
                     }
-                    isDraggingHorizontally = false
                     let screenWidth = UIScreen.main.bounds.width
                     let threshold: CGFloat = screenWidth * 0.2
                     let velocity = value.predictedEndTranslation.width - value.translation.width
 
                     if abs(value.translation.width) > threshold || abs(velocity) > 200 {
                         let goingLeft = value.translation.width < 0
-                        // Animate off-screen
+                        // Animate current day off-screen (incoming follows)
                         withAnimation(.easeOut(duration: 0.2)) {
                             dragOffset = goingLeft ? -screenWidth : screenWidth
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            // Switch the actual date and reset
                             if goingLeft {
                                 appState.goToNextDay()
                             } else {
                                 appState.goToPreviousDay()
                             }
-                            // Jump to opposite side and slide in
-                            dragOffset = goingLeft ? screenWidth : -screenWidth
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                dragOffset = 0
-                            }
+                            isDraggingHorizontally = false
+                            dragOffset = 0
                         }
                     } else {
                         // Snap back
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             dragOffset = 0
                         }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isDraggingHorizontally = false
+                        }
                     }
                 }
         )
+    }
+
+    // MARK: - Calendar Content (reusable for current + incoming day)
+
+    @ViewBuilder
+    private func calendarContent(
+        blocks: [Block],
+        showNowLine: Bool,
+        contentWidth: CGFloat,
+        screenWidth: CGFloat
+    ) -> some View {
+        Group {
+            // Dim zones (outside working hours, only when extended hours are on)
+            if appState.settings.useExtendedHours {
+                dimZones(contentWidth: contentWidth)
+            }
+
+            // Hour grid lines
+            hourLines(contentWidth: contentWidth)
+
+            // Time labels
+            timeLabels()
+
+            // Calendar blocks
+            ForEach(blocks) { block in
+                CalendarBlockView(block: block, contentWidth: contentWidth)
+                    .offset(
+                        x: gridLeftPadding + blockXOffset(block: block, contentWidth: contentWidth),
+                        y: topInset + yForMinute(block.startMin)
+                    )
+            }
+
+            // Now line
+            if showNowLine {
+                nowLine(contentWidth: contentWidth)
+            }
+        }
+        .frame(width: screenWidth)
     }
 
     // MARK: - Dim Zones
@@ -249,10 +288,6 @@ struct CalendarView: View {
 
     private func yForMinute(_ minute: Int) -> CGFloat {
         CGFloat(minute - viewStartMin) * pixelsPerMinute
-    }
-
-    private func heightForRange(startMin: Int, endMin: Int) -> CGFloat {
-        CGFloat(endMin - startMin) * pixelsPerMinute
     }
 
     private func blockXOffset(block: Block, contentWidth: CGFloat) -> CGFloat {
