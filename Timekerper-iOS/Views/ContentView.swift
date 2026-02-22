@@ -28,9 +28,9 @@ struct CalendarTab: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                CalendarView()
+            VStack(spacing: 0) {
                 ActiveTaskBar()
+                CalendarView()
             }
             .navigationTitle(DateTimeUtils.formatDateHeaderCompact(appState.selectedDate))
             .navigationBarTitleDisplayMode(.inline)

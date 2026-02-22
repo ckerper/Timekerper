@@ -69,8 +69,8 @@ struct CalendarView: View {
                         }
                     }
                     .frame(width: geo.size.width, height: totalHeight)
-                    // Extra padding at bottom so evening hours can be scrolled into view
-                    .padding(.bottom, geo.size.height * 0.6)
+                    // Small bottom padding so the last hour label isn't flush with the edge
+                    .padding(.bottom, 100)
                 }
                 .onAppear {
                     if !hasScrolled {
