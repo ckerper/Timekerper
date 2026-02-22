@@ -7,11 +7,20 @@ struct CalendarView: View {
     // Zoom levels matching web
     private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
 
-    private var extStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.extendedStart) }
-    private var extEndMin: Int { DateTimeUtils.timeToMinutes(appState.settings.extendedEnd) }
+    // Visible range respects useExtendedHours toggle
+    private var viewStartMin: Int {
+        appState.settings.useExtendedHours
+            ? DateTimeUtils.timeToMinutes(appState.settings.extendedStart)
+            : DateTimeUtils.timeToMinutes(appState.settings.workdayStart)
+    }
+    private var viewEndMin: Int {
+        appState.settings.useExtendedHours
+            ? DateTimeUtils.timeToMinutes(appState.settings.extendedEnd)
+            : DateTimeUtils.timeToMinutes(appState.settings.workdayEnd)
+    }
     private var workStartMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayStart) }
     private var workEndMin: Int { DateTimeUtils.timeToMinutes(appState.settings.workdayEnd) }
-    private var totalVisibleMinutes: Int { extEndMin - extStartMin }
+    private var totalVisibleMinutes: Int { viewEndMin - viewStartMin }
 
     private var pixelsPerMinute: CGFloat {
         CGFloat(appState.settings.zoomLevel) * 1.5
@@ -24,9 +33,9 @@ struct CalendarView: View {
     private let timeLabelWidth: CGFloat = 38
     private let gridLeftPadding: CGFloat = 40
 
-    private var startHour: Int { extStartMin / 60 }
-    // +1 ensures the final hour line is drawn when extEndMin falls exactly on an hour boundary
-    private var endHour: Int { (extEndMin / 60) + 1 }
+    private var startHour: Int { viewStartMin / 60 }
+    // +1 ensures the final hour line is drawn when viewEndMin falls exactly on an hour boundary
+    private var endHour: Int { (viewEndMin / 60) + 1 }
 
     var body: some View {
         GeometryReader { geo in
@@ -46,8 +55,10 @@ struct CalendarView: View {
                         }
                         .frame(width: 1)
 
-                        // Dim zones (outside working hours)
-                        dimZones(contentWidth: contentWidth)
+                        // Dim zones (outside working hours, only when extended hours are on)
+                        if appState.settings.useExtendedHours {
+                            dimZones(contentWidth: contentWidth)
+                        }
 
                         // Hour grid lines
                         hourLines(contentWidth: contentWidth)
@@ -100,7 +111,7 @@ struct CalendarView: View {
         let dimColor = Color.gray.opacity(0.08)
 
         // Before working hours
-        if extStartMin < workStartMin {
+        if viewStartMin < workStartMin {
             Rectangle()
                 .fill(dimColor)
                 .frame(width: contentWidth, height: yForMinute(workStartMin))
@@ -108,10 +119,10 @@ struct CalendarView: View {
         }
 
         // After working hours
-        if workEndMin < extEndMin {
+        if workEndMin < viewEndMin {
             Rectangle()
                 .fill(dimColor)
-                .frame(width: contentWidth, height: yForMinute(extEndMin) - yForMinute(workEndMin))
+                .frame(width: contentWidth, height: yForMinute(viewEndMin) - yForMinute(workEndMin))
                 .offset(x: gridLeftPadding, y: yForMinute(workEndMin))
         }
     }
@@ -122,7 +133,7 @@ struct CalendarView: View {
     private func hourLines(contentWidth: CGFloat) -> some View {
         ForEach(startHour..<endHour, id: \.self) { hour in
             let minute = hour * 60
-            if minute >= extStartMin && minute <= extEndMin {
+            if minute >= viewStartMin && minute <= viewEndMin {
                 Rectangle()
                     .fill(Color.gray.opacity(0.15))
                     .frame(width: contentWidth, height: 1)
@@ -137,7 +148,7 @@ struct CalendarView: View {
     private func timeLabels() -> some View {
         ForEach(startHour..<endHour, id: \.self) { hour in
             let minute = hour * 60
-            if minute >= extStartMin && minute <= extEndMin {
+            if minute >= viewStartMin && minute <= viewEndMin {
                 Text(formatHourLabel(hour))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -152,7 +163,7 @@ struct CalendarView: View {
     @ViewBuilder
     private func nowLine(contentWidth: CGFloat) -> some View {
         let nowMin = appState.currentTimeMinutes
-        if nowMin >= extStartMin && nowMin <= extEndMin {
+        if nowMin >= viewStartMin && nowMin <= viewEndMin {
             ZStack(alignment: .leading) {
                 // Red line
                 Rectangle()
@@ -178,7 +189,7 @@ struct CalendarView: View {
     // MARK: - Helpers
 
     private func yForMinute(_ minute: Int) -> CGFloat {
-        CGFloat(minute - extStartMin) * pixelsPerMinute
+        CGFloat(minute - viewStartMin) * pixelsPerMinute
     }
 
     private func heightForRange(startMin: Int, endMin: Int) -> CGFloat {
