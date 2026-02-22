@@ -54,9 +54,8 @@ struct CalendarView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let leadingInset = geo.frame(in: .global).minX
             let screenWidth = geo.size.width
-            let contentWidth = UIScreen.main.bounds.width - leadingInset - gridLeftPadding - 10
+            let contentWidth = screenWidth - gridLeftPadding - 10
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
@@ -92,7 +91,7 @@ struct CalendarView: View {
                             .offset(x: dragOffset + (dragOffset < 0 ? screenWidth : -screenWidth))
                         }
                     }
-                    .frame(width: screenWidth, height: totalHeight + topInset)
+                    .frame(width: screenWidth, height: totalHeight + topInset, alignment: .topLeading)
                     .clipped()
                 }
                 .contentMargins(0, for: .scrollContent)
@@ -248,7 +247,7 @@ struct CalendarView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                    .offset(x: -6, y: topInset + yForMinute(minute) - 7)
+                    .offset(x: 2, y: topInset + yForMinute(minute) - 7)
             }
         }
     }
