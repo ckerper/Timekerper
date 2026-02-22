@@ -4,7 +4,7 @@
 
 const GIST_FILENAME = 'timekerper-sync.json'
 const API_BASE = 'https://api.github.com'
-const LOCAL_ONLY_SETTINGS = ['zoomLevel', 'fitMode', 'debugMode', 'debugTimeOffset']
+export const LOCAL_ONLY_SETTINGS = ['zoomLevel', 'fitMode', 'debugMode', 'debugTimeOffset', 'darkMode']
 
 function headers(pat) {
   return {

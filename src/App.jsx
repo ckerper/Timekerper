@@ -5,12 +5,12 @@ import {
   getTodayStr, addDays, formatDateHeader, formatShortDateHeader, formatDateHeaderCompact,
   parseIcsFile, filterIcsEvents
 } from './scheduler'
-import { findGist, createGist, pushToGist, pullFromGist, buildPayload, hasChanges } from './sync'
+import { findGist, createGist, pushToGist, pullFromGist, buildPayload, hasChanges, LOCAL_ONLY_SETTINGS } from './sync'
 import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-22 3:30 PM CT'
+const LAST_UPDATED = '2026-02-22 5:15 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -1162,8 +1162,6 @@ function App() {
     setEvents(prev => prev.map(e => e.tagId === tagId ? { ...e, tagId: null } : e))
   }
 
-  const LOCAL_ONLY_SETTINGS = ['zoomLevel', 'fitMode', 'debugMode', 'debugTimeOffset', 'darkMode']
-
   const exportSettings = () => {
     const transferable = Object.fromEntries(
       Object.entries(settings).filter(([k]) => !LOCAL_ONLY_SETTINGS.includes(k))
@@ -1285,7 +1283,12 @@ function App() {
     if (remote.tasks) setTasks(remote.tasks)
     if (remote.events) setEvents(remote.events)
     if (remote.tags) setTags(remote.tags)
-    if (remote.settings) setSettings(prev => ({ ...prev, ...remote.settings }))
+    if (remote.settings) {
+      const filtered = Object.fromEntries(
+        Object.entries(remote.settings).filter(([k]) => !LOCAL_ONLY_SETTINGS.includes(k))
+      )
+      setSettings(prev => ({ ...prev, ...filtered }))
+    }
     // Reconstruct active task timer from remote data
     if (remote.activeTaskId != null) {
       const task = (remote.tasks || []).find(t => t.id === remote.activeTaskId && !t.completed)
