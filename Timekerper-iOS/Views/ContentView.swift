@@ -78,6 +78,10 @@ struct CalendarTab: View {
                 set: { appState.showSettingsSheet = $0 }
             )) {
                 SettingsView()
+                    .preferredColorScheme(
+                        appState.settings.darkMode == "on" ? .dark :
+                        appState.settings.darkMode == "off" ? .light : nil
+                    )
             }
         }
     }

@@ -188,15 +188,19 @@ struct SettingsView: View {
                     set: { appState.settings.restrictTasksToWorkHours = $0 }
                 ))
             }
-            Picker("Dark mode", selection: Binding(
-                get: { appState.settings.darkMode },
-                set: { appState.settings.darkMode = $0 }
-            )) {
-                Text("Off").tag("off")
-                Text("System").tag("system")
-                Text("On").tag("on")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Dark Mode")
+                Picker("Dark mode", selection: Binding(
+                    get: { appState.settings.darkMode },
+                    set: { appState.settings.darkMode = $0 }
+                )) {
+                    Text("Off").tag("off")
+                    Text("System").tag("system")
+                    Text("On").tag("on")
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
-            .pickerStyle(.segmented)
         }
     }
 

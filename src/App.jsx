@@ -10,7 +10,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-22 12:00 PM CT'
+const LAST_UPDATED = '2026-02-22 12:05 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -1157,7 +1157,7 @@ function App() {
     setEvents(prev => prev.map(e => e.tagId === tagId ? { ...e, tagId: null } : e))
   }
 
-  const LOCAL_ONLY_SETTINGS = ['zoomLevel', 'fitMode', 'debugMode', 'debugTimeOffset']
+  const LOCAL_ONLY_SETTINGS = ['zoomLevel', 'fitMode', 'debugMode', 'debugTimeOffset', 'darkMode']
 
   const exportSettings = () => {
     const transferable = Object.fromEntries(
