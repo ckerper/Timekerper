@@ -44,17 +44,12 @@ struct EventFormSheet: View {
 
                     // Quick duration buttons
                     HStack(spacing: 8) {
-                        ForEach([15, 30, 45, 60, 90, 120], id: \.self) { mins in
-                            Button(DateTimeUtils.formatElapsed(mins)) {
-                                endTime = startTime.addingTimeInterval(Double(mins) * 60)
-                                endManuallySet = true
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.gray.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
+                        durationButton(15)
+                        durationButton(30)
+                        durationButton(45)
+                        durationButton(60)
+                        durationButton(90)
+                        durationButton(120)
                     }
                 }
 
@@ -124,6 +119,21 @@ struct EventFormSheet: View {
             }
         }
         .presentationDetents([.large])
+    }
+
+    // MARK: - Duration Button
+
+    private func durationButton(_ minutes: Int) -> some View {
+        Button(DateTimeUtils.formatElapsed(minutes)) {
+            isAdjustingEnd = true
+            endTime = startTime.addingTimeInterval(Double(minutes) * 60)
+            endManuallySet = true
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.gray.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     // MARK: - Helpers
