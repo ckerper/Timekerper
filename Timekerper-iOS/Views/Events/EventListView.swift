@@ -50,31 +50,34 @@ struct EventListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Filter bar
-            HStack {
-                let count = appState.events.filter { $0.date >= appState.todayStr }.count
-                Text("\(count) upcoming event\(count == 1 ? "" : "s")")
+            List {
+                // Filter bar (inside list so it scrolls with content)
+                HStack {
+                    let count = appState.events.filter { $0.date >= appState.todayStr }.count
+                    Text("\(count) upcoming event\(count == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button(appState.hidePastEvents ? "Show past" : "Hide past") {
+                        appState.hidePastEvents.toggle()
+                    }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                Button(appState.hidePastEvents ? "Show past" : "Hide past") {
-                    appState.hidePastEvents.toggle()
                 }
-                .font(.caption)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
 
-            if futureEventGroups.isEmpty && !showBulkEntry {
-                ContentUnavailableView {
-                    Label("No Upcoming Events", systemImage: "clock")
-                } description: {
-                    Text("No events scheduled from today forward.")
-                }
-            } else {
-                List {
+                if futureEventGroups.isEmpty && !showBulkEntry {
+                    ContentUnavailableView {
+                        Label("No Upcoming Events", systemImage: "clock")
+                    } description: {
+                        Text("No events scheduled from today forward.")
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else {
                     ForEach(futureEventGroups, id: \.date) { group in
                         Section {
                             ForEach(group.events) { event in
@@ -91,9 +94,9 @@ struct EventListView: View {
                         }
                     }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
 
             // Bulk entry
             if showBulkEntry {
