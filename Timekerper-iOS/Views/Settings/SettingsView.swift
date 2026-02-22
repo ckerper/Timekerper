@@ -159,7 +159,10 @@ struct SettingsView: View {
                 Spacer()
                 Button(action: {
                     let levels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
-                    if let idx = levels.firstIndex(of: appState.settings.zoomLevel), idx > 0 {
+                    let cur = appState.settings.zoomLevel
+                    // Find closest level index (handles float drift from JSON)
+                    let idx = levels.enumerated().min(by: { abs($0.element - cur) < abs($1.element - cur) })?.offset ?? 0
+                    if idx > 0 {
                         appState.settings.zoomLevel = levels[idx - 1]
                     }
                 }) {
@@ -170,7 +173,9 @@ struct SettingsView: View {
                     .font(.caption.monospacedDigit())
                 Button(action: {
                     let levels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
-                    if let idx = levels.firstIndex(of: appState.settings.zoomLevel), idx < levels.count - 1 {
+                    let cur = appState.settings.zoomLevel
+                    let idx = levels.enumerated().min(by: { abs($0.element - cur) < abs($1.element - cur) })?.offset ?? 0
+                    if idx < levels.count - 1 {
                         appState.settings.zoomLevel = levels[idx + 1]
                     }
                 }) {

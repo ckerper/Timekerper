@@ -52,9 +52,13 @@ struct CalendarBlockView: View {
 
     private var taskBlockContent: some View {
         ZStack(alignment: .topLeading) {
-            // Background
+            // Background with subtle border for visual separation
             RoundedRectangle(cornerRadius: 4)
                 .fill(ColorUtils.blendWithSurface(hex: tagColor, alpha: 0.1, isDarkMode: isDark))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 4)
+                        .strokeBorder(Color(hex: tagColor).opacity(0.25), lineWidth: 1)
+                }
                 .overlay(alignment: .leading) {
                     // Thick left border
                     Rectangle()

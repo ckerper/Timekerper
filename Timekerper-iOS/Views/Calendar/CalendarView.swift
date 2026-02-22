@@ -35,14 +35,16 @@ struct CalendarView: View {
         CGFloat(totalVisibleMinutes) * pixelsPerMinute
     }
 
-    private let gridLeftPadding: CGFloat = 32
+    // Time labels sit at x:0 with natural width; grid starts after this gap
+    private let gridLeftPadding: CGFloat = 36
 
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
 
     var body: some View {
         GeometryReader { geo in
-            let contentWidth = geo.size.width - gridLeftPadding - 4
+            // 8pt right margin so blocks don't touch the screen edge
+            let contentWidth = geo.size.width - gridLeftPadding - 8
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
@@ -84,6 +86,7 @@ struct CalendarView: View {
                         }
                     }
                     .frame(width: geo.size.width, height: totalHeight)
+                    .clipped()
                 }
                 .onAppear {
                     if !hasScrolled {
@@ -91,10 +94,8 @@ struct CalendarView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             let targetHour: Int
                             if appState.isToday {
-                                // Scroll to one hour before current time
                                 targetHour = max(appState.currentTimeMinutes / 60 - 1, startHour)
                             } else {
-                                // Scroll to workday start
                                 targetHour = max(workStartMin / 60, startHour)
                             }
                             withAnimation(.easeOut(duration: 0.3)) {
@@ -105,6 +106,20 @@ struct CalendarView: View {
                 }
             }
         }
+        // Swipe left/right to change days
+        .gesture(
+            DragGesture(minimumDistance: 50, coordinateSpace: .local)
+                .onEnded { value in
+                    // Horizontal swipe must be more horizontal than vertical
+                    if abs(value.translation.width) > abs(value.translation.height) {
+                        if value.translation.width < 0 {
+                            appState.goToNextDay()
+                        } else {
+                            appState.goToPreviousDay()
+                        }
+                    }
+                }
+        )
     }
 
     // MARK: - Dim Zones
@@ -155,7 +170,7 @@ struct CalendarView: View {
                 Text(formatHourLabel(hour))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .offset(x: 2, y: yForMinute(minute) - 7)
+                    .offset(x: 0, y: yForMinute(minute) - 7)
             }
         }
     }
@@ -167,18 +182,15 @@ struct CalendarView: View {
         let nowMin = appState.currentTimeMinutes
         if nowMin >= viewStartMin && nowMin <= viewEndMin {
             ZStack(alignment: .leading) {
-                // Red line
                 Rectangle()
                     .fill(Color.red)
                     .frame(width: contentWidth, height: 2)
 
-                // Red dot
                 Circle()
                     .fill(Color.red)
                     .frame(width: 8, height: 8)
                     .offset(x: -4)
 
-                // "Now" label
                 Text("Now")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.red)
