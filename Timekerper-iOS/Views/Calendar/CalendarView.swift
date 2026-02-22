@@ -38,7 +38,7 @@ struct CalendarView: View {
     }
 
     // Time labels sit at x:0 with natural width; grid starts after this gap
-    private let gridLeftPadding: CGFloat = 26
+    private let gridLeftPadding: CGFloat = 30
 
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
@@ -54,7 +54,7 @@ struct CalendarView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let contentWidth = geo.size.width - gridLeftPadding
+            let contentWidth = geo.size.width - gridLeftPadding - 6
             let screenWidth = geo.size.width
 
             ScrollViewReader { proxy in
