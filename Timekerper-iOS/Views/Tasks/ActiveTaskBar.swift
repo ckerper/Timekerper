@@ -49,7 +49,7 @@ struct ActiveTaskBar: View {
 
     private func activeView(task: TaskItem) -> some View {
         VStack(spacing: 6) {
-            // Row 1: Name + Timer
+            // Row 1: Name + Action buttons
             HStack {
                 Text(task.name)
                     .font(.subheadline)
@@ -59,16 +59,38 @@ struct ActiveTaskBar: View {
 
                 Spacer()
 
-                let elapsed = appState.elapsedMinutes
-                let estimate = task.effectiveDuration
-                let isOver = elapsed > estimate
-                Text("\(DateTimeUtils.formatElapsed(elapsed)) / \(DateTimeUtils.formatElapsed(estimate))")
-                    .font(.caption.monospacedDigit())
-                    .fontWeight(.medium)
-                    .foregroundStyle(isOver ? Color.red : .white)
+                // Action buttons
+                HStack(spacing: 6) {
+                    Button(action: { appState.completeActiveTask() }) {
+                        Image(systemName: "checkmark")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.green)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                    Button(action: { appState.pauseActiveTask() }) {
+                        Image(systemName: "pause.fill")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.orange)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                    Button(action: { appState.cancelActiveTask() }) {
+                        Image(systemName: "xmark")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(6)
+                    .background(Color.red.opacity(0.8))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
             }
 
-            // Row 2: [-] [1m|5m|15m] [+]  [actions]
+            // Row 2: [-] [1m|5m|15m] [+]  Timer
             HStack(spacing: 6) {
                 // Minus button
                 Button(action: { appState.adjustTaskTime(-appState.adjustIncrement) }) {
@@ -105,35 +127,13 @@ struct ActiveTaskBar: View {
 
                 Spacer()
 
-                // Action buttons
-                HStack(spacing: 6) {
-                    Button(action: { appState.completeActiveTask() }) {
-                        Image(systemName: "checkmark")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .padding(6)
-                    .background(Color.green)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                    Button(action: { appState.pauseActiveTask() }) {
-                        Image(systemName: "pause.fill")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .padding(6)
-                    .background(Color.orange)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                    Button(action: { appState.cancelActiveTask() }) {
-                        Image(systemName: "xmark")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .padding(6)
-                    .background(Color.red.opacity(0.8))
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
+                let elapsed = appState.elapsedMinutes
+                let estimate = task.effectiveDuration
+                let isOver = elapsed > estimate
+                Text("\(DateTimeUtils.formatElapsed(elapsed)) / \(DateTimeUtils.formatElapsed(estimate))")
+                    .font(.caption.monospacedDigit())
+                    .fontWeight(.medium)
+                    .foregroundStyle(isOver ? Color.red : .white)
             }
         }
         .padding(10)

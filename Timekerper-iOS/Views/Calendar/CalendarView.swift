@@ -46,7 +46,7 @@ struct CalendarView: View {
     }
 
     // Time labels sit at x:0 with natural width; grid starts after this gap
-    private let gridLeftPadding: CGFloat = 30
+    private let gridLeftPadding: CGFloat = 36
 
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
@@ -255,7 +255,7 @@ struct CalendarView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                    .offset(x: 2, y: topInset + yForMinute(minute) - 7)
+                    .offset(x: 4, y: topInset + yForMinute(minute) - 7)
             }
         }
     }
@@ -275,11 +275,6 @@ struct CalendarView: View {
                     .fill(Color.red)
                     .frame(width: 8, height: 8)
                     .offset(x: -4)
-
-                Text("Now")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.red)
-                    .offset(x: contentWidth - 24)
             }
             .offset(x: gridLeftPadding, y: topInset + yForMinute(nowMin) - 1)
         }
