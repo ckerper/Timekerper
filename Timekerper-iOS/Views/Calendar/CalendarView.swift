@@ -3,6 +3,7 @@ import SwiftUI
 struct CalendarView: View {
     @Environment(AppState.self) private var appState
     @State private var hasScrolled = false
+    @State private var dragOffset: CGFloat = 0
 
     // Zoom levels matching web
     private let zoomLevels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
@@ -36,15 +37,15 @@ struct CalendarView: View {
     }
 
     // Time labels sit at x:0 with natural width; grid starts after this gap
-    private let gridLeftPadding: CGFloat = 36
+    private let gridLeftPadding: CGFloat = 34
 
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
 
     var body: some View {
         GeometryReader { geo in
-            // 8pt right margin so blocks don't touch the screen edge
-            let contentWidth = geo.size.width - gridLeftPadding - 8
+            // Right margin so blocks don't touch the screen edge
+            let contentWidth = geo.size.width - gridLeftPadding - 16
 
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: true) {
@@ -88,6 +89,7 @@ struct CalendarView: View {
                     .frame(width: geo.size.width, height: totalHeight)
                     .clipped()
                 }
+                .contentMargins(0, for: .scrollContent)
                 .onAppear {
                     if !hasScrolled {
                         hasScrolled = true
@@ -106,16 +108,41 @@ struct CalendarView: View {
                 }
             }
         }
-        // Swipe left/right to change days
+        .offset(x: dragOffset)
+        // Swipe left/right to change days with animation
         .gesture(
-            DragGesture(minimumDistance: 50, coordinateSpace: .local)
-                .onEnded { value in
-                    // Horizontal swipe must be more horizontal than vertical
+            DragGesture(minimumDistance: 30, coordinateSpace: .local)
+                .onChanged { value in
+                    // Only track horizontal movement when clearly horizontal
                     if abs(value.translation.width) > abs(value.translation.height) {
-                        if value.translation.width < 0 {
-                            appState.goToNextDay()
-                        } else {
-                            appState.goToPreviousDay()
+                        dragOffset = value.translation.width * 0.4
+                    }
+                }
+                .onEnded { value in
+                    let threshold: CGFloat = 50
+                    if abs(value.translation.width) > abs(value.translation.height),
+                       abs(value.translation.width) > threshold {
+                        let goingLeft = value.translation.width < 0
+                        // Slide off screen in swipe direction
+                        withAnimation(.easeIn(duration: 0.15)) {
+                            dragOffset = goingLeft ? -UIScreen.main.bounds.width * 0.3 : UIScreen.main.bounds.width * 0.3
+                        }
+                        // Change day and slide in from opposite side
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            if goingLeft {
+                                appState.goToNextDay()
+                            } else {
+                                appState.goToPreviousDay()
+                            }
+                            dragOffset = goingLeft ? UIScreen.main.bounds.width * 0.3 : -UIScreen.main.bounds.width * 0.3
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                dragOffset = 0
+                            }
+                        }
+                    } else {
+                        // Snap back
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            dragOffset = 0
                         }
                     }
                 }
@@ -170,6 +197,7 @@ struct CalendarView: View {
                 Text(formatHourLabel(hour))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .frame(width: gridLeftPadding - 4, alignment: .trailing)
                     .offset(x: 0, y: yForMinute(minute) - 7)
             }
         }

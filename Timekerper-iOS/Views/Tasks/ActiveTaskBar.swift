@@ -25,7 +25,7 @@ struct ActiveTaskBar: View {
             }
             .padding(.horizontal, 12)
             .padding(.top, 4)
-            .padding(.bottom, 6)
+            .padding(.bottom, 10)
         }
     }
 

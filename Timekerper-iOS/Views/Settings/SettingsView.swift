@@ -154,33 +154,22 @@ struct SettingsView: View {
                 Text("Extra Large").tag("xlarge")
             }
 
-            HStack {
-                Text("Zoom")
-                Spacer()
-                Button(action: {
-                    let levels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
-                    let cur = appState.settings.zoomLevel
-                    // Find closest level index (handles float drift from JSON)
-                    let idx = levels.enumerated().min(by: { abs($0.element - cur) < abs($1.element - cur) })?.offset ?? 0
-                    if idx > 0 {
-                        appState.settings.zoomLevel = levels[idx - 1]
-                    }
-                }) {
-                    Image(systemName: "minus.magnifyingglass")
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Zoom")
+                    Spacer()
+                    Text("\(Int(appState.settings.zoomLevel * 100))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
-                Text("\(Int(appState.settings.zoomLevel * 100))%")
-                    .frame(width: 44)
-                    .font(.caption.monospacedDigit())
-                Button(action: {
-                    let levels: [Double] = [0.5, 0.75, 1, 1.5, 2, 3]
-                    let cur = appState.settings.zoomLevel
-                    let idx = levels.enumerated().min(by: { abs($0.element - cur) < abs($1.element - cur) })?.offset ?? 0
-                    if idx < levels.count - 1 {
-                        appState.settings.zoomLevel = levels[idx + 1]
-                    }
-                }) {
-                    Image(systemName: "plus.magnifyingglass")
-                }
+                Slider(
+                    value: Binding(
+                        get: { appState.settings.zoomLevel },
+                        set: { appState.settings.zoomLevel = $0 }
+                    ),
+                    in: 0.5...3.0,
+                    step: 0.25
+                )
             }
         }
     }
