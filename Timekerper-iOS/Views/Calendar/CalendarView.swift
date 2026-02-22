@@ -38,7 +38,7 @@ struct CalendarView: View {
     }
 
     // Time labels sit at x:0 with natural width; grid starts after this gap
-    private let gridLeftPadding: CGFloat = 34
+    private let gridLeftPadding: CGFloat = 26
 
     private var startHour: Int { viewStartMin / 60 }
     private var endHour: Int { (viewEndMin / 60) + 1 }
