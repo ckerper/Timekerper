@@ -28,6 +28,10 @@ The app can export and import user preferences (Settings > Transfer Settings). T
 - If it's **device/session-specific** (zoom level, debug flags, window-dependent values) — add its key to `LOCAL_ONLY_SETTINGS` in **both** `src/App.jsx` and `src/sync.js` so it gets excluded from export/import and sync.
 - When in doubt, ask whether the new setting should transfer across devices.
 
+## User Preferences
+
+The user is not familiar with CLI commands. Always provide fully copy-pasteable commands with explicit step-by-step instructions for anything beyond basic git operations (pull, push, commit). Never assume familiarity with PowerShell, curl, or command-line tools.
+
 ## Dev
 
 ```
