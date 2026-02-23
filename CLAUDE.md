@@ -4,9 +4,12 @@ A single-page time-blocking calendar app built with React 19 + Vite. All state l
 
 ## Architecture
 
-- **`src/App.jsx`** — The entire UI: state, handlers, rendering (~1600 lines, single component)
+- **`src/App.jsx`** — The entire UI: state, handlers, rendering (single component)
 - **`src/scheduler.js`** — Pure scheduling engine + date/time utilities. Takes tasks, events, and settings, returns positioned blocks for the calendar.
 - **`src/App.css`** — All styles, CSS custom properties for theming
+- **`src/useSync.jsx`** — Custom hook containing all GitHub Gist sync logic (state, effects, handlers, UI). Conditionally loaded via `import.meta.glob`; only exists on GitHub.
+- **`src/useSyncStub.js`** — No-op stub returning `{ syncIndicator: null, syncSettingsUI: null }`. Exists on both repos.
+- **`src/sync.js`** — Pure GitHub Gist API functions (no React). Only exists on GitHub.
 
 ## Key Concepts
 
@@ -22,7 +25,7 @@ The app can export and import user preferences (Settings > Transfer Settings). T
 
 **When adding a new setting to `defaultSettings`:**
 - If it's a **user preference** (hours, colors, durations, behavior toggles, font size) — it transfers automatically. No action needed.
-- If it's **device/session-specific** (zoom level, debug flags, window-dependent values) — add its key to the `LOCAL_ONLY_SETTINGS` array in the `exportSettings` handler so it gets excluded from export/import.
+- If it's **device/session-specific** (zoom level, debug flags, window-dependent values) — add its key to `LOCAL_ONLY_SETTINGS` in **both** `src/App.jsx` and `src/sync.js` so it gets excluded from export/import and sync.
 - When in doubt, ask whether the new setting should transfer across devices.
 
 ## Dev
@@ -33,7 +36,33 @@ npm run dev     # Vite dev server on localhost:5173
 npm run build   # Production build
 ```
 
-## Deployment Workflow
+## Dual Deployment
+
+Timekerper deploys to two environments:
+- **GitHub Pages** (dev/test): Auto-deploys from `docs/` on push to `main`. Includes sync functionality.
+- **GitLab Pages** (prod/sharing): Manual push only when the user asks. Sync code and iOS app are stripped. No references to GitHub PATs, mobile app, or multi-device syncing should exist in the GitLab code.
+
+### How Sync Conditional Loading Works
+
+`App.jsx` uses `import.meta.glob('./useSync.jsx', { eager: true })` to optionally load the sync hook. When `useSync.jsx` exists (GitHub), real sync is loaded. When absent (GitLab), `useSyncStub` provides null returns and no sync UI renders. `App.jsx` is identical on both repos.
+
+### Push to Lab Workflow (only when the user explicitly asks)
+
+```
+git checkout -b gitlab-deploy
+git rm src/sync.js src/useSync.jsx
+git rm -r Timekerper-iOS/
+git commit -m "Strip sync and iOS for GitLab deploy"
+git push gitlab gitlab-deploy:main --force
+git checkout main
+git branch -D gitlab-deploy
+```
+
+The GitLab remote is: `https://gitlab.epic.com/timekerper/timekerper.git`
+
+**Do NOT auto-push to GitLab.** Only push when explicitly asked.
+
+## Deployment Workflow (GitHub — automatic)
 
 **CRITICAL**: After making ANY code changes, you MUST follow these steps in order:
 

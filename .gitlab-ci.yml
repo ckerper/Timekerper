@@ -1,0 +1,12 @@
+pages:
+  stage: deploy
+  image: artifactory.epic.com/docker/alpine
+  tags:
+    - k8s
+  script:
+    - cp -r docs public
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
