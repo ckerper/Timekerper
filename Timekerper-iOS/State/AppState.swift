@@ -807,8 +807,12 @@ final class AppState {
             events = remote.events
             tags = remote.tags
             settings = settings.merging(remote: remote.settings)
-            if let remoteActive = remote.activeTaskId {
+            if let remoteActive = remote.activeTaskId,
+               let task = remote.tasks.first(where: { $0.id == remoteActive && !$0.completed }),
+               task.startedAtMin != nil {
                 activeTaskId = remoteActive
+            } else {
+                activeTaskId = nil
             }
             suppressingPush = false
             syncStatus = .idle
