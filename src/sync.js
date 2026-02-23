@@ -102,11 +102,20 @@ export function buildPayload(tasks, events, tags, settings, activeTaskId) {
 // Returns true if remote data differs from local.
 export function hasChanges(localPayload, remotePayload) {
   // Compare the data fields, ignoring pushedAt timestamp
-  const fields = ['tasks', 'events', 'tags', 'settings', 'activeTaskId']
+  const fields = ['tasks', 'events', 'tags', 'activeTaskId']
   for (const field of fields) {
     if (JSON.stringify(localPayload[field]) !== JSON.stringify(remotePayload[field])) {
       return true
     }
+  }
+  // Compare settings separately — strip LOCAL_ONLY keys from both sides so
+  // iOS's "reset-to-default" approach (keeps keys with default values) doesn't
+  // cause false positives vs the web's "delete key" approach.
+  const stripLocal = (s) => s ? Object.fromEntries(
+    Object.entries(s).filter(([k]) => !LOCAL_ONLY_SETTINGS.includes(k))
+  ) : s
+  if (JSON.stringify(stripLocal(localPayload.settings)) !== JSON.stringify(stripLocal(remotePayload.settings))) {
+    return true
   }
   return false
 }

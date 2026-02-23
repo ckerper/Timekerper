@@ -10,7 +10,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-22 7:50 PM CT'
+const LAST_UPDATED = '2026-02-22 10:15 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -210,7 +210,10 @@ function App() {
 
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('timekerper-settings')
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+    const s = saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+    // Guard: iOS sync may have leaked darkMode as string "system"/"on"/"off" — coerce to boolean
+    if (typeof s.darkMode !== 'boolean') s.darkMode = s.darkMode === 'on' || s.darkMode === true
+    return s
   })
 
   const [tags, setTags] = useState(() => {
@@ -474,7 +477,7 @@ function App() {
   // ── Effects: Dark Mode ────────────────────────────────────────────────────
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light')
+    document.documentElement.setAttribute('data-theme', settings.darkMode === true ? 'dark' : 'light')
   }, [settings.darkMode])
 
   // ── Effects: View Menu click-outside ─────────────────────────────────────
@@ -719,6 +722,11 @@ function App() {
 
   const shouldSuppressAutoStart = () => {
     const now = getCurrentTimeMinutes() + timeOffset
+    // Suppress if outside allowed task hours
+    const taskStart = settings.restrictTasksToWorkHours ? timeToMinutes(settings.workdayStart) : timeToMinutes(settings.extendedStart)
+    const taskEnd = settings.restrictTasksToWorkHours ? timeToMinutes(settings.workdayEnd) : timeToMinutes(settings.extendedEnd)
+    if (now < taskStart || now >= taskEnd) return true
+    // Suppress if mid-event or too close to an upcoming event
     const today = getTodayStr()
     const minFrag = settings.minFragmentMinutes || 5
     return events
