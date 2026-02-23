@@ -38,8 +38,6 @@ struct CalendarBlockView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     private var isDark: Bool { colorScheme == .dark }
-    @State private var isPressed = false
-
     var body: some View {
         Group {
             switch block.type {
@@ -52,22 +50,10 @@ struct CalendarBlockView: View {
             }
         }
         .frame(width: blockWidth, height: blockHeight)
-        .scaleEffect(isPressed ? 0.98 : 1.0)
-        .opacity(isPressed ? 0.85 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPressed { isPressed = true }
-                }
-                .onEnded { value in
-                    isPressed = false
-                    if abs(value.translation.width) < 10 && abs(value.translation.height) < 10 {
-                        handleTap()
-                    }
-                }
-        )
+        .onTapGesture {
+            handleTap()
+        }
     }
 
     // MARK: - Task Block
