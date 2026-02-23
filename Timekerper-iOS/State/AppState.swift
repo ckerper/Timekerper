@@ -50,7 +50,7 @@ final class AppState {
     var adjustIncrement: Int = 5 {
         didSet { PersistenceService.save(adjustIncrement, key: "adjustIncrement") }
     }
-    var hideCompleted = false
+    var hideCompleted = true
     var hidePastEvents = false
 
     // MARK: - Undo/Redo
@@ -102,10 +102,18 @@ final class AppState {
     }
 
     func blocksForDate(_ date: String) -> [Block] {
-        Scheduler.scheduleDay(
+        // When extended hours are off, collapse extended boundaries to workday
+        // boundaries so the scheduler doesn't place tasks in invisible hours.
+        // Matches the web's effectiveSettings behavior.
+        var effectiveSettings = settings
+        if !settings.useExtendedHours {
+            effectiveSettings.extendedStart = settings.workdayStart
+            effectiveSettings.extendedEnd = settings.workdayEnd
+        }
+        return Scheduler.scheduleDay(
             tasks: tasks,
             events: events,
-            settings: settings,
+            settings: effectiveSettings,
             activeTaskId: activeTaskId,
             totalElapsed: elapsedMinutes,
             selectedDate: date

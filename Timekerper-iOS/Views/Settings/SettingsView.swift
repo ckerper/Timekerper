@@ -109,6 +109,10 @@ struct SettingsView: View {
                     get: { appState.settings.extendedEnd == "23:59" ? "00:00" : appState.settings.extendedEnd },
                     set: { appState.settings.extendedEnd = ($0 == "00:00") ? "23:59" : $0 }
                 ))
+                Toggle("Restrict tasks to work hours", isOn: Binding(
+                    get: { appState.settings.restrictTasksToWorkHours },
+                    set: { appState.settings.restrictTasksToWorkHours = $0 }
+                ))
             }
         }
     }
@@ -182,12 +186,6 @@ struct SettingsView: View {
                 get: { appState.settings.wrapListNames },
                 set: { appState.settings.wrapListNames = $0 }
             ))
-            if appState.settings.specifyWorkingHours {
-                Toggle("Restrict tasks to work hours", isOn: Binding(
-                    get: { appState.settings.restrictTasksToWorkHours },
-                    set: { appState.settings.restrictTasksToWorkHours = $0 }
-                ))
-            }
             VStack(alignment: .leading, spacing: 8) {
                 Text("Dark Mode")
                 Picker("Dark mode", selection: Binding(

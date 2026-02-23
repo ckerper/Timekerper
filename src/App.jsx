@@ -10,7 +10,7 @@ import './App.css'
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-22 7:35 PM CT'
+const LAST_UPDATED = '2026-02-22 7:50 PM CT'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -242,7 +242,7 @@ function App() {
   const [showViewMenu, setShowViewMenu] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [editingEvent, setEditingEvent] = useState(null)
-  const [hideCompleted, setHideCompleted] = useState(false)
+  const [hideCompleted, setHideCompleted] = useState(true)
   const [hidePastEvents, setHidePastEvents] = useState(false)
   const [eventSourceFilter, setEventSourceFilter] = useState('all') // 'all' | 'manual' | 'outlook'
   const [icsCategoryModal, setIcsCategoryModal] = useState(null)
