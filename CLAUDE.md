@@ -56,7 +56,9 @@ Timekerper deploys to two environments:
 git checkout -b gitlab-deploy
 git rm src/sync.js src/useSync.jsx
 git rm -r Timekerper-iOS/
-git commit -m "Strip sync and iOS for GitLab deploy"
+npm run build                        # MUST rebuild — import.meta.glob resolves at build time
+git add docs/
+git commit -m "<use the same message as the most recent GitHub commit>"
 git push gitlab gitlab-deploy:main --force
 git checkout main
 git branch -D gitlab-deploy
