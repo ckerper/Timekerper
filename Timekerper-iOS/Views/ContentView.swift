@@ -84,7 +84,7 @@ struct CalendarTab: View {
                         appState.editingEvent = nil
                         appState.showEventSheet = true
                     }) {
-                        Image(systemName: "clock.badge.plus")
+                        Image(systemName: "calendar.badge.plus")
                     }
 
                     Button(action: { appState.showSettingsSheet = true }) {
