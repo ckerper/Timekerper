@@ -809,10 +809,19 @@ final class AppState {
             settings = settings.merging(remote: remote.settings)
             if let remoteActive = remote.activeTaskId,
                let task = remote.tasks.first(where: { $0.id == remoteActive && !$0.completed }),
-               task.startedAtMin != nil {
+               let startedAt = task.startedAtMin {
+                let now = DateTimeUtils.currentTimeMinutes() + timeOffset
+                let gap = (task.pauseEvents ?? []).reduce(0) { sum, pe in
+                    sum + ((pe.end ?? now) - pe.start)
+                }
+                let elapsed = max(0, now - startedAt - gap)
                 activeTaskId = remoteActive
+                taskStartTime = Date().addingTimeInterval(-Double(elapsed) * 60)
+                elapsedMinutes = elapsed
             } else {
                 activeTaskId = nil
+                taskStartTime = nil
+                elapsedMinutes = 0
             }
             suppressingPush = false
             syncStatus = .idle
