@@ -349,7 +349,7 @@ export function filterIcsEvents(parsedEvents, statusSettings, minDate, maxDate) 
 
 // Compute total available work minutes on a given day (gaps between blocking ranges)
 // additionalBlocking: optional array of { start, end } minute ranges (completed segments, pauses)
-function computeAvailableTime(events, date, startMin, endMin, additionalBlocking) {
+function computeAvailableTime(events, date, startMin, endMin, additionalBlocking, minFrag = 0) {
   const dayEvents = events
     .filter(e => e.date === date)
     .map(e => ({
@@ -370,10 +370,16 @@ function computeAvailableTime(events, date, startMin, endMin, additionalBlocking
   let available = 0
   let cursor = startMin
   for (const r of allRanges) {
-    if (r.start > cursor) available += r.start - cursor
+    if (r.start > cursor) {
+      const gap = r.start - cursor
+      if (gap >= minFrag) available += gap
+    }
     cursor = Math.max(cursor, r.end)
   }
-  if (cursor < endMin) available += endMin - cursor
+  if (cursor < endMin) {
+    const gap = endMin - cursor
+    if (gap >= minFrag) available += gap
+  }
   return available
 }
 
@@ -454,13 +460,13 @@ export function scheduleDay(tasks, events, settings, activeTaskId, totalElapsed,
     // Determine where task scheduling begins
     let scheduleStartMin
     if (isFuture) {
-      scheduleStartMin = workdayStartMin
+      scheduleStartMin = taskStartMin
     } else if (firstTask?.startedAtMin != null) {
       scheduleStartMin = Math.max(taskStartMin, firstTask.startedAtMin)
     } else if (activeTaskId) {
       scheduleStartMin = Math.max(taskStartMin, currentTimeMin - totalElapsed)
     } else {
-      scheduleStartMin = Math.max(workdayStartMin, Math.min(currentTimeMin, taskEndMin))
+      scheduleStartMin = Math.max(taskStartMin, Math.min(currentTimeMin, taskEndMin))
     }
 
     // For future days: compute how many task-minutes are absorbed by prior days
@@ -486,13 +492,14 @@ export function scheduleDay(tasks, events, settings, activeTaskId, totalElapsed,
       }
 
       // Today's remaining capacity: from current time to end of task hours
+      const minFrag = settings.minFragmentMinutes || 5
       const todayStart = Math.max(taskStartMin, Math.min(currentTimeMin, taskEndMin))
       if (todayStart < taskEndMin) {
-        minutesToSkip += computeAvailableTime(events, todayStr, todayStart, taskEndMin, getAdditionalBlocking(todayStr))
+        minutesToSkip += computeAvailableTime(events, todayStr, todayStart, taskEndMin, getAdditionalBlocking(todayStr), minFrag)
       }
       // Intermediate future days (between today+1 and selectedDate-1)
       for (let d = addDays(todayStr, 1); d < selectedDate; d = addDays(d, 1)) {
-        minutesToSkip += computeAvailableTime(events, d, workdayStartMin, taskEndMin, getAdditionalBlocking(d))
+        minutesToSkip += computeAvailableTime(events, d, taskStartMin, taskEndMin, getAdditionalBlocking(d), minFrag)
       }
     }
 

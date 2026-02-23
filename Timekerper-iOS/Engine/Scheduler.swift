@@ -13,7 +13,8 @@ enum Scheduler {
         date: String,
         startMin: Int,
         endMin: Int,
-        additionalBlocking: [(start: Int, end: Int)]
+        additionalBlocking: [(start: Int, end: Int)],
+        minFrag: Int = 0
     ) -> Int {
         let dayEvents = events
             .filter { $0.date == date }
@@ -33,12 +34,14 @@ enum Scheduler {
         var cursor = startMin
         for r in allRanges {
             if r.start > cursor {
-                available += r.start - cursor
+                let gap = r.start - cursor
+                if gap >= minFrag { available += gap }
             }
             cursor = max(cursor, r.end)
         }
         if cursor < endMin {
-            available += endMin - cursor
+            let gap = endMin - cursor
+            if gap >= minFrag { available += gap }
         }
         return available
     }
@@ -183,13 +186,13 @@ enum Scheduler {
             // Determine where task scheduling begins
             let scheduleStartMin: Int
             if isFuture {
-                scheduleStartMin = workdayStartMin
+                scheduleStartMin = taskStartMin
             } else if let ft = firstTask, ft.startedAtMin != nil {
                 scheduleStartMin = max(taskStartMin, ft.startedAtMin!)
             } else if activeTaskId != nil {
                 scheduleStartMin = max(taskStartMin, currentTimeMin - totalElapsed)
             } else {
-                scheduleStartMin = max(workdayStartMin, min(currentTimeMin, taskEndMin))
+                scheduleStartMin = max(taskStartMin, min(currentTimeMin, taskEndMin))
             }
 
             // For future days: compute how many task-minutes are absorbed by prior days
@@ -220,12 +223,14 @@ enum Scheduler {
                 }
 
                 // Today's remaining capacity
+                let minFrag = max(settings.minFragmentMinutes, 1)
                 let todayStart = max(taskStartMin, min(currentTimeMin, taskEndMin))
                 if todayStart < taskEndMin {
                     minutesToSkip += computeAvailableTime(
                         events: events, date: todayStr,
                         startMin: todayStart, endMin: taskEndMin,
-                        additionalBlocking: getAdditionalBlocking(for: todayStr)
+                        additionalBlocking: getAdditionalBlocking(for: todayStr),
+                        minFrag: minFrag
                     )
                 }
                 // Intermediate future days
@@ -233,8 +238,9 @@ enum Scheduler {
                 while d < selectedDate {
                     minutesToSkip += computeAvailableTime(
                         events: events, date: d,
-                        startMin: workdayStartMin, endMin: taskEndMin,
-                        additionalBlocking: getAdditionalBlocking(for: d)
+                        startMin: taskStartMin, endMin: taskEndMin,
+                        additionalBlocking: getAdditionalBlocking(for: d),
+                        minFrag: minFrag
                     )
                     d = DateTimeUtils.addDays(d, days: 1)
                 }
