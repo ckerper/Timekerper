@@ -13,7 +13,7 @@ const useSync = syncModules['./useSync.jsx']?.useSync ?? useSyncStub
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-23 3:45 PM CT'
+const LAST_UPDATED = '2026-02-23 4:50 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -285,6 +285,13 @@ function App() {
   const [draggedTagId, setDraggedTagId] = useState(null)
   const [dragOverTagId, setDragOverTagId] = useState(null)
 
+  // ── Undo/Redo System ──────────────────────────────────────────────────────
+
+  const undoStackRef = useRef([])
+  const redoStackRef = useRef([])
+  const tasksRef = useRef(tasks)
+  const eventsRef = useRef(events)
+
   // ── Sync (conditional — loaded via import.meta.glob) ────────────────────────
 
   const { syncIndicator, syncSettingsUI } = useSync({
@@ -297,13 +304,6 @@ function App() {
     tasksRef, eventsRef,
     timeOffset,
   })
-
-  // ── Undo/Redo System ──────────────────────────────────────────────────────
-
-  const undoStackRef = useRef([])
-  const redoStackRef = useRef([])
-  const tasksRef = useRef(tasks)
-  const eventsRef = useRef(events)
   const [, forceRender] = useState(0)
 
   // Keep refs in sync
