@@ -3,7 +3,7 @@ import {
   timeToMinutes, minutesToTime, formatTime, formatElapsed,
   formatBlockTimeRange, getCurrentTimeMinutes, scheduleDay,
   getTodayStr, addDays, formatDateHeader, formatShortDateHeader, formatDateHeaderCompact,
-  parseIcsFile, filterIcsEvents
+  parseIcsFile, filterIcsEvents, computeTotalGapMinutes
 } from './scheduler'
 import { useSyncStub } from './useSyncStub'
 import './App.css'
@@ -13,7 +13,7 @@ const useSync = syncModules['./useSync.jsx']?.useSync ?? useSyncStub
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-23 4:50 PM CT'
+const LAST_UPDATED = '2026-02-23 7:45 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -148,10 +148,13 @@ function restoreActiveTaskState() {
   const s = savedSettings ? JSON.parse(savedSettings) : {}
   const offset = s.debugMode ? (s.debugTimeOffset || 0) : 0
   const now = getCurrentTimeMinutes() + offset
-  // Compute total pause gap from pauseEvents (all should be finalized if task is active)
-  const gap = (task.pauseEvents || []).reduce((sum, pe) => {
-    return sum + ((pe.end ?? now) - pe.start)
-  }, 0) || (task.pauseGapMinutes || 0)  // fallback for legacy data
+  // Compute merged gap (pauses + calendar events) to subtract from elapsed
+  const savedEvents = localStorage.getItem('timekerper-events')
+  const evts = savedEvents ? JSON.parse(savedEvents) : []
+  const taskDate = task.startedAtDate || getTodayStr()
+  const hasPauseEvents = task.pauseEvents && task.pauseEvents.length > 0
+  const gap = computeTotalGapMinutes(evts, task.pauseEvents || [], task.startedAtMin, now, taskDate)
+    + (hasPauseEvents ? 0 : (task.pauseGapMinutes || 0))  // legacy fallback
   const elapsed = Math.max(0, now - task.startedAtMin - gap)
   return { id, taskStartTime: Date.now() - (elapsed * 60000), elapsedMinutes: elapsed }
 }
@@ -453,11 +456,17 @@ function App() {
   useEffect(() => {
     if (!activeTaskId || !taskStartTime) return
     const interval = setInterval(() => {
-      setElapsedMinutes(Math.floor((Date.now() - taskStartTime) / 60000))
-      setCurrentTime(getCurrentTimeMinutes() + timeOffset)
+      const now = getCurrentTimeMinutes() + timeOffset
+      setCurrentTime(now)
+      const task = tasks.find(t => t.id === activeTaskId)
+      if (task && task.startedAtMin != null) {
+        const taskDate = task.startedAtDate || getTodayStr()
+        const gap = computeTotalGapMinutes(events, task.pauseEvents || [], task.startedAtMin, now, taskDate)
+        setElapsedMinutes(Math.max(0, now - task.startedAtMin - gap))
+      }
     }, 1000)
     return () => clearInterval(interval)
-  }, [activeTaskId, taskStartTime, timeOffset])
+  }, [activeTaskId, taskStartTime, timeOffset, tasks, events])
 
   useEffect(() => {
     if (activeTaskId) return

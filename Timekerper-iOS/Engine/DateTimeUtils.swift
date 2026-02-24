@@ -139,6 +139,52 @@ enum DateTimeUtils {
         return formatter.string(from: date)
     }
 
+    // MARK: - Active Task Gap Computation
+
+    /// Compute total non-working minutes during an active task's window.
+    /// Merges calendar event intervals and pause event intervals to avoid
+    /// double-counting overlaps (e.g., paused during an event).
+    static func computeTotalGapMinutes(
+        calendarEvents: [EventItem],
+        pauseEvents: [PauseEvent]?,
+        taskStartMin: Int,
+        currentMin: Int,
+        taskDate: String
+    ) -> Int {
+        var intervals: [(start: Int, end: Int)] = []
+
+        for e in calendarEvents where e.date == taskDate {
+            let s = max(timeToMinutes(e.start), taskStartMin)
+            let end = min(timeToMinutes(e.end), currentMin)
+            if end > s { intervals.append((s, end)) }
+        }
+
+        for pe in (pauseEvents ?? []) {
+            let s = max(pe.start, taskStartMin)
+            let end = min(pe.end ?? currentMin, currentMin)
+            if end > s { intervals.append((s, end)) }
+        }
+
+        guard !intervals.isEmpty else { return 0 }
+
+        let sorted = intervals.sorted { $0.start < $1.start }
+        var total = 0
+        var curStart = sorted[0].start
+        var curEnd = sorted[0].end
+        for i in 1..<sorted.count {
+            if sorted[i].start <= curEnd {
+                curEnd = max(curEnd, sorted[i].end)
+            } else {
+                total += curEnd - curStart
+                curStart = sorted[i].start
+                curEnd = sorted[i].end
+            }
+        }
+        total += curEnd - curStart
+
+        return total
+    }
+
     // MARK: - ID Generation
 
     /// Generates a unique ID matching web's Date.now() (milliseconds since epoch).

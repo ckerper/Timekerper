@@ -149,12 +149,17 @@ final class AppState {
         if let savedId = PersistenceService.load(key: "activeTaskId", as: Int?.self),
            let id = savedId {
             let task = loadedTasks.first(where: { $0.id == id && !$0.completed })
-            if let task = task, task.startedAtMin != nil {
+            if let task = task, let startedAt = task.startedAtMin {
                 let now = DateTimeUtils.currentTimeMinutes() + offset
-                let gap = (task.pauseEvents ?? []).reduce(0) { sum, pe in
-                    sum + ((pe.end ?? now) - pe.start)
-                }
-                let elapsed = max(0, now - (task.startedAtMin ?? 0) - gap)
+                let taskDate = task.startedAtDate ?? DateTimeUtils.todayStr()
+                let gap = DateTimeUtils.computeTotalGapMinutes(
+                    calendarEvents: loadedEvents,
+                    pauseEvents: task.pauseEvents,
+                    taskStartMin: startedAt,
+                    currentMin: now,
+                    taskDate: taskDate
+                )
+                let elapsed = max(0, now - startedAt - gap)
                 self.activeTaskId = id
                 self.taskStartTime = Date().addingTimeInterval(-Double(elapsed) * 60)
                 self.elapsedMinutes = elapsed
@@ -206,9 +211,19 @@ final class AppState {
         let offset = settings.debugMode ? settings.debugTimeOffset : 0
         currentTimeMinutes = DateTimeUtils.currentTimeMinutes() + offset
 
-        if let startTime = taskStartTime {
-            let elapsed = Int(Date().timeIntervalSince(startTime) / 60)
-            elapsedMinutes = max(0, elapsed)
+        if let activeId = activeTaskId,
+           let task = tasks.first(where: { $0.id == activeId }),
+           let startedAt = task.startedAtMin {
+            let now = currentTimeMinutes
+            let taskDate = task.startedAtDate ?? DateTimeUtils.todayStr()
+            let gap = DateTimeUtils.computeTotalGapMinutes(
+                calendarEvents: events,
+                pauseEvents: task.pauseEvents,
+                taskStartMin: startedAt,
+                currentMin: now,
+                taskDate: taskDate
+            )
+            elapsedMinutes = max(0, now - startedAt - gap)
         }
     }
 
@@ -811,9 +826,14 @@ final class AppState {
                let task = remote.tasks.first(where: { $0.id == remoteActive && !$0.completed }),
                let startedAt = task.startedAtMin {
                 let now = DateTimeUtils.currentTimeMinutes() + timeOffset
-                let gap = (task.pauseEvents ?? []).reduce(0) { sum, pe in
-                    sum + ((pe.end ?? now) - pe.start)
-                }
+                let taskDate = task.startedAtDate ?? DateTimeUtils.todayStr()
+                let gap = DateTimeUtils.computeTotalGapMinutes(
+                    calendarEvents: remote.events,
+                    pauseEvents: task.pauseEvents,
+                    taskStartMin: startedAt,
+                    currentMin: now,
+                    taskDate: taskDate
+                )
                 let elapsed = max(0, now - startedAt - gap)
                 activeTaskId = remoteActive
                 taskStartTime = Date().addingTimeInterval(-Double(elapsed) * 60)

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { findGist, createGist, pushToGist, pullFromGist, buildPayload, hasChanges, LOCAL_ONLY_SETTINGS } from './sync'
-import { getCurrentTimeMinutes } from './scheduler'
+import { getCurrentTimeMinutes, computeTotalGapMinutes, getTodayStr } from './scheduler'
 
 function formatSyncTime(date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000)
@@ -58,7 +58,10 @@ export function useSync({
       const task = (remote.tasks || []).find(t => t.id === remote.activeTaskId && !t.completed)
       if (task && task.startedAtMin != null) {
         const now = getCurrentTimeMinutes() + timeOffset
-        const gap = (task.pauseEvents || []).reduce((sum, pe) => sum + ((pe.end ?? now) - pe.start), 0) || (task.pauseGapMinutes || 0)
+        const taskDate = task.startedAtDate || getTodayStr()
+        const hasPauseEvents = task.pauseEvents && task.pauseEvents.length > 0
+        const gap = computeTotalGapMinutes(remote.events || [], task.pauseEvents || [], task.startedAtMin, now, taskDate)
+          + (hasPauseEvents ? 0 : (task.pauseGapMinutes || 0))
         const elapsed = Math.max(0, now - task.startedAtMin - gap)
         setActiveTaskId(remote.activeTaskId)
         setTaskStartTime(Date.now() - (elapsed * 60000))

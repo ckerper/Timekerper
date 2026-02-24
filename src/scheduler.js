@@ -50,6 +50,45 @@ export function getCurrentTimeMinutes() {
   return now.getHours() * 60 + now.getMinutes()
 }
 
+/**
+ * Compute total non-working minutes during an active task's window.
+ * Merges calendar event intervals and pause event intervals to avoid
+ * double-counting overlaps (e.g., paused during an event).
+ */
+export function computeTotalGapMinutes(calendarEvents, pauseEvents, taskStartMin, currentMin, taskDate) {
+  const intervals = []
+
+  for (const e of calendarEvents) {
+    if (e.date !== taskDate) continue
+    const s = Math.max(timeToMinutes(e.start), taskStartMin)
+    const end = Math.min(timeToMinutes(e.end), currentMin)
+    if (end > s) intervals.push([s, end])
+  }
+
+  for (const pe of (pauseEvents || [])) {
+    const s = Math.max(pe.start, taskStartMin)
+    const end = Math.min(pe.end ?? currentMin, currentMin)
+    if (end > s) intervals.push([s, end])
+  }
+
+  if (intervals.length === 0) return 0
+
+  intervals.sort((a, b) => a[0] - b[0])
+  let total = 0
+  let [curStart, curEnd] = intervals[0]
+  for (let i = 1; i < intervals.length; i++) {
+    if (intervals[i][0] <= curEnd) {
+      curEnd = Math.max(curEnd, intervals[i][1])
+    } else {
+      total += curEnd - curStart
+      ;[curStart, curEnd] = intervals[i]
+    }
+  }
+  total += curEnd - curStart
+
+  return total
+}
+
 export function getTodayStr() {
   const d = new Date()
   return d.getFullYear() + '-' +
