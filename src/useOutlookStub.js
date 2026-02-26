@@ -8,5 +8,7 @@ export function useOutlookStub() {
     connectOutlook: () => {},
     disconnectOutlook: () => {},
     refreshOutlookEvents: () => {},
+    pendingOutlookImport: null,
+    finishOutlookImport: () => {},
   }
 }

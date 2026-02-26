@@ -21,7 +21,7 @@ import.meta.glob('./outlook.js', { eager: true })
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-26 11:01 PM CT'
+const LAST_UPDATED = '2026-02-26 11:11 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -346,6 +346,7 @@ function App() {
   const {
     outlookAvailable, outlookConnected, outlookStatus, outlookError, lastFetched,
     connectOutlook, disconnectOutlook, refreshOutlookEvents,
+    pendingOutlookImport, finishOutlookImport,
   } = useOutlook({
     events, setEvents,
     settings,
@@ -353,6 +354,22 @@ function App() {
     minDate, maxDate,
     tags,
   })
+
+  // When Outlook fetch finds new/unmapped categories, open the category dialog
+  useEffect(() => {
+    if (!pendingOutlookImport) return
+    const { catCounts, uncategorized } = pendingOutlookImport
+    const categoryList = Object.keys(catCounts).sort()
+    const savedRules = settings.icsCategoryRules || []
+    const mappings = categoryList.map(cat => {
+      const existing = savedRules.find(r => r.category.toLowerCase() === cat.toLowerCase())
+      return existing
+        ? { category: cat, include: existing.include, tagId: existing.tagId }
+        : { category: cat, include: true, tagId: null }
+    })
+    setIcsCategoryMappings(mappings)
+    setIcsCategoryModal({ mode: 'outlook-import', catCounts, uncategorized })
+  }, [pendingOutlookImport]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const undo = useCallback(() => {
     const stack = undoStackRef.current
@@ -2526,9 +2543,9 @@ function App() {
           setIcsCategoryMappings([])
         }}>
           <div className="modal modal-wide" onMouseDown={e => e.stopPropagation()}>
-            <h3>{icsCategoryModal.mode === 'import' ? 'Map Categories' : 'Category Mapping'}</h3>
+            <h3>{icsCategoryModal.mode === 'settings' ? 'Category Mapping' : 'Map Categories'}</h3>
 
-            {icsCategoryModal.mode === 'import' && icsCategoryModal.uncategorized > 0 && (
+            {(icsCategoryModal.mode === 'import' || icsCategoryModal.mode === 'outlook-import') && icsCategoryModal.uncategorized > 0 && (
               <p className="form-hint" style={{ marginBottom: '0.75rem' }}>
                 {icsCategoryModal.uncategorized} event{icsCategoryModal.uncategorized !== 1 ? 's' : ''} without a category will always be imported.
               </p>
@@ -2639,6 +2656,22 @@ function App() {
                     setIcsCategoryModal(null)
                     setIcsCategoryMappings([])
                   }}>Remember &amp; Import</button>
+                </>
+              ) : icsCategoryModal.mode === 'outlook-import' ? (
+                <>
+                  <button className="btn-primary" onClick={() => {
+                    const rules = icsCategoryMappings.filter(m => m.category.trim())
+                    finishOutlookImport(rules)
+                    setIcsCategoryModal(null)
+                    setIcsCategoryMappings([])
+                  }}>Apply</button>
+                  <button className="btn-primary" onClick={() => {
+                    const rules = icsCategoryMappings.filter(m => m.category.trim())
+                    updateSetting('icsCategoryRules', rules)
+                    finishOutlookImport(rules)
+                    setIcsCategoryModal(null)
+                    setIcsCategoryMappings([])
+                  }}>Remember &amp; Apply</button>
                 </>
               ) : (
                 <button className="btn-primary" onClick={() => {
