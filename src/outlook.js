@@ -124,10 +124,12 @@ const SHOW_AS_TO_STATUS = {
 }
 
 export function graphEventToParsedFormat(graphEvent) {
-  // calendarView returns times in the user's mailbox timezone by default.
-  // Parse as local time (no 'Z' suffix) since the timezone should match.
-  const startLocal = new Date(graphEvent.start.dateTime)
-  const endLocal = new Date(graphEvent.end.dateTime)
+  // Graph API returns times in UTC by default. Append 'Z' so new Date()
+  // parses as UTC and getHours() returns the correct local time.
+  const startTz = graphEvent.start.timeZone === 'UTC' ? 'Z' : ''
+  const endTz = graphEvent.end.timeZone === 'UTC' ? 'Z' : ''
+  const startLocal = new Date(graphEvent.start.dateTime + startTz)
+  const endLocal = new Date(graphEvent.end.dateTime + endTz)
 
   const date = startLocal.getFullYear() + '-' +
     String(startLocal.getMonth() + 1).padStart(2, '0') + '-' +
