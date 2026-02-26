@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  getInitializedMsal, acquireTokenSilent, loginRedirect, logout,
+  getInitializedMsal, getMsalInitError, acquireTokenSilent, loginRedirect, logout,
   fetchCalendarEvents, graphEventToParsedFormat,
 } from './outlook'
 import { filterIcsEvents } from './scheduler'
@@ -19,7 +19,13 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   useEffect(() => {
     let cancelled = false
     getInitializedMsal().then(instance => {
-      if (cancelled || !instance) return
+      if (cancelled) return
+      if (!instance) {
+        // MSAL init failed — show the error
+        setOutlookStatus('error')
+        setOutlookError(getMsalInitError() || 'MSAL failed to initialize')
+        return
+      }
       msalRef.current = instance
       if (instance.getAllAccounts().length > 0) {
         setOutlookConnected(true)
@@ -31,7 +37,11 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   // ── Connect (redirect login) ──────────────────────────────────────────────
 
   const connectOutlook = useCallback(async () => {
-    if (!msalRef.current) return
+    if (!msalRef.current) {
+      setOutlookStatus('error')
+      setOutlookError(getMsalInitError() || 'MSAL not ready — try refreshing the page')
+      return
+    }
     // This navigates away from the page. When it comes back,
     // handleRedirectPromise (in outlook.js) processes the token,
     // and the useEffect above detects the cached account.

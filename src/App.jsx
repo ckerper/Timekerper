@@ -21,7 +21,7 @@ import.meta.glob('./outlook.js', { eager: true })
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-26 10:25 PM CT'
+const LAST_UPDATED = '2026-02-26 10:32 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -1877,6 +1877,9 @@ function App() {
                   ) : (
                     <button className="clear-btn outlook-btn" onClick={connectOutlook}>Connect Outlook</button>
                   )
+                )}
+                {outlookAvailable && outlookStatus === 'error' && outlookError && (
+                  <div className="outlook-error">{outlookError}</div>
                 )}
                 {events.length > 0 && (
                   <button className="clear-btn" onClick={exportEvents}>{copiedFeedback === 'events' ? 'Copied!' : 'Export Events'}</button>

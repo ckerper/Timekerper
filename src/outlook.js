@@ -27,11 +27,12 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 // MSAL must initialize and handle the redirect response before React renders,
 // so the auth token from the redirect is available immediately on page load.
 
+let msalInitError = null
+
 const msalInstance = new PublicClientApplication(MSAL_CONFIG)
 const msalReady = msalInstance.initialize()
   .then(() => msalInstance.handleRedirectPromise())
   .then(response => {
-    // response is non-null when returning from a redirect login
     if (response) {
       console.log('MSAL redirect login succeeded:', response.account?.username)
     }
@@ -39,8 +40,13 @@ const msalReady = msalInstance.initialize()
   })
   .catch(err => {
     console.error('MSAL init failed:', err)
+    msalInitError = err?.message || String(err)
     return null
   })
+
+export function getMsalInitError() {
+  return msalInitError
+}
 
 export async function getInitializedMsal() {
   return msalReady
