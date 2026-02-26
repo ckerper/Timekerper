@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  initializeMsal, acquireTokenSilent, loginPopup, logout,
+  getInitializedMsal, acquireTokenSilent, loginPopup, logout,
   fetchCalendarEvents, graphEventToParsedFormat,
 } from './outlook'
 import { filterIcsEvents } from './scheduler'
@@ -14,18 +14,16 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   const msalRef = useRef(null)
   const fetchingRef = useRef(false)
 
-  // ── Initialize MSAL on mount ──────────────────────────────────────────────
+  // ── Pick up the eagerly-initialized MSAL instance ──────────────────────────
 
   useEffect(() => {
     let cancelled = false
-    initializeMsal().then(instance => {
-      if (cancelled) return
+    getInitializedMsal().then(instance => {
+      if (cancelled || !instance) return
       msalRef.current = instance
       if (instance.getAllAccounts().length > 0) {
         setOutlookConnected(true)
       }
-    }).catch(err => {
-      console.error('MSAL init failed:', err)
     })
     return () => { cancelled = true }
   }, [])

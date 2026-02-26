@@ -15,9 +15,14 @@ const useSync = syncModules['./useSync.jsx']?.useSync ?? useSyncStub
 const outlookModules = import.meta.glob('./useOutlook.jsx', { eager: true })
 const useOutlook = outlookModules['./useOutlook.jsx']?.useOutlook ?? useOutlookStub
 
+// Also load outlook.js eagerly so MSAL initializes before React renders.
+// isMsalPopup detects when this page is the auth popup (skip full render).
+const outlookCoreModules = import.meta.glob('./outlook.js', { eager: true })
+const isMsalPopup = outlookCoreModules['./outlook.js']?.isMsalPopup ?? (() => false)
+
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-26 10:03 PM CT'
+const LAST_UPDATED = '2026-02-26 10:15 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -205,6 +210,11 @@ const _initialData = getInitialData()
 // ─── App Component ──────────────────────────────────────────────────────────
 
 function App() {
+
+  // ── MSAL popup detection ────────────────────────────────────────────────
+  // When Microsoft auth redirects back, this page loads inside the popup.
+  // Return nothing so the popup stays blank while MSAL processes the token.
+  if (isMsalPopup()) return null
 
   // ── State: Core Data ──────────────────────────────────────────────────────
 

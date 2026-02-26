@@ -19,20 +19,33 @@ const MSAL_CONFIG = {
 const SCOPES = ['Calendars.ReadWrite.Shared']
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
-let msalInstance = null
+// ── Eager initialization ─────────────────────────────────────────────────────
+// MSAL must initialize before React renders so that popup redirects are
+// detected and closed immediately (before the full app renders in the popup).
 
-export function getMsalInstance() {
-  if (!msalInstance) {
-    msalInstance = new PublicClientApplication(MSAL_CONFIG)
-  }
-  return msalInstance
+const msalInstance = new PublicClientApplication(MSAL_CONFIG)
+const msalReady = msalInstance.initialize()
+  .then(() => msalInstance.handleRedirectPromise())
+  .then(() => msalInstance)
+  .catch(err => {
+    console.error('MSAL init failed:', err)
+    return null
+  })
+
+// Returns true if this page is running inside an MSAL popup/redirect.
+// Used by App.jsx to skip rendering the full UI in the popup window.
+export function isMsalPopup() {
+  return window.opener && window.opener !== window && (
+    window.location.hash.includes('code=') ||
+    window.location.hash.includes('error=') ||
+    window.location.search.includes('code=') ||
+    window.location.search.includes('error=') ||
+    document.referrer.includes('login.microsoftonline.com')
+  )
 }
 
-export async function initializeMsal() {
-  const instance = getMsalInstance()
-  await instance.initialize()
-  await instance.handleRedirectPromise()
-  return instance
+export async function getInitializedMsal() {
+  return msalReady
 }
 
 export async function acquireTokenSilent(instance) {
