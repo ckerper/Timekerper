@@ -1,6 +1,10 @@
 // ── Outlook Calendar Integration Engine ──────────────────────────────────────
 // Pure functions for authenticating with Microsoft and fetching calendar events.
 // No React dependencies — mirrors the pattern of sync.js.
+//
+// Uses the REDIRECT auth flow (not popup) for maximum browser compatibility.
+// Clicking "Connect Outlook" navigates the page to Microsoft login, then
+// redirects back. All app state is in localStorage so nothing is lost.
 
 import { PublicClientApplication } from '@azure/msal-browser'
 
@@ -20,29 +24,23 @@ const SCOPES = ['Calendars.ReadWrite.Shared']
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
 // ── Eager initialization ─────────────────────────────────────────────────────
-// MSAL must initialize before React renders so that popup redirects are
-// detected and closed immediately (before the full app renders in the popup).
+// MSAL must initialize and handle the redirect response before React renders,
+// so the auth token from the redirect is available immediately on page load.
 
 const msalInstance = new PublicClientApplication(MSAL_CONFIG)
 const msalReady = msalInstance.initialize()
   .then(() => msalInstance.handleRedirectPromise())
-  .then(() => msalInstance)
+  .then(response => {
+    // response is non-null when returning from a redirect login
+    if (response) {
+      console.log('MSAL redirect login succeeded:', response.account?.username)
+    }
+    return msalInstance
+  })
   .catch(err => {
     console.error('MSAL init failed:', err)
     return null
   })
-
-// Returns true if this page is running inside an MSAL popup/redirect.
-// Used by App.jsx to skip rendering the full UI in the popup window.
-export function isMsalPopup() {
-  return window.opener && window.opener !== window && (
-    window.location.hash.includes('code=') ||
-    window.location.hash.includes('error=') ||
-    window.location.search.includes('code=') ||
-    window.location.search.includes('error=') ||
-    document.referrer.includes('login.microsoftonline.com')
-  )
-}
 
 export async function getInitializedMsal() {
   return msalReady
@@ -62,15 +60,16 @@ export async function acquireTokenSilent(instance) {
   }
 }
 
-export async function loginPopup(instance) {
-  const response = await instance.loginPopup({ scopes: SCOPES })
-  return { accessToken: response.accessToken, account: response.account }
+// Redirect-based login: navigates away from the page, returns after auth.
+export function loginRedirect(instance) {
+  instance.loginRedirect({ scopes: SCOPES })
 }
 
 export async function logout(instance) {
   const accounts = instance.getAllAccounts()
   if (accounts.length > 0) {
-    await instance.logoutPopup({ account: accounts[0] })
+    // Clear account from cache without navigating away
+    instance.clearCache()
   }
 }
 

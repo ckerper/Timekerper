@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  getInitializedMsal, acquireTokenSilent, loginPopup, logout,
+  getInitializedMsal, acquireTokenSilent, loginRedirect, logout,
   fetchCalendarEvents, graphEventToParsedFormat,
 } from './outlook'
 import { filterIcsEvents } from './scheduler'
@@ -28,27 +28,17 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
     return () => { cancelled = true }
   }, [])
 
-  // ── Connect (login) ──────────────────────────────────────────────────────
+  // ── Connect (redirect login) ──────────────────────────────────────────────
 
   const connectOutlook = useCallback(async () => {
     if (!msalRef.current) return
-    setOutlookStatus('fetching')
-    setOutlookError(null)
-    try {
-      await loginPopup(msalRef.current)
-      setOutlookConnected(true)
-      setOutlookStatus('idle')
-    } catch (err) {
-      if (err.errorCode === 'user_cancelled') {
-        setOutlookStatus('idle')
-        return
-      }
-      setOutlookStatus('error')
-      setOutlookError(err.message)
-    }
+    // This navigates away from the page. When it comes back,
+    // handleRedirectPromise (in outlook.js) processes the token,
+    // and the useEffect above detects the cached account.
+    loginRedirect(msalRef.current)
   }, [])
 
-  // ── Disconnect (logout) ──────────────────────────────────────────────────
+  // ── Disconnect ────────────────────────────────────────────────────────────
 
   const disconnectOutlook = useCallback(async () => {
     if (!msalRef.current) return
@@ -71,11 +61,12 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
     setOutlookStatus('fetching')
     setOutlookError(null)
     try {
-      // Get token (silent first, then interactive fallback)
+      // Get token silently (MSAL uses cached token)
       let token = await acquireTokenSilent(msalRef.current)
       if (!token) {
-        const result = await loginPopup(msalRef.current)
-        token = result.accessToken
+        // Token expired and can't refresh — need to re-authenticate
+        loginRedirect(msalRef.current)
+        return
       }
 
       const graphEvents = await fetchCalendarEvents(token, minDate, maxDate)
