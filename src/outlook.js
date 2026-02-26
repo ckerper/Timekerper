@@ -8,7 +8,11 @@
 
 import { PublicClientApplication } from '@azure/msal-browser'
 
-const MSAL_CONFIG = {
+// In Electron, MSAL browser is not used — auth goes through the main process.
+// Skip all browser MSAL initialization to avoid crashes on file:// URLs.
+const isElectron = typeof window !== 'undefined' && !!window.electronOutlook
+
+const MSAL_CONFIG = !isElectron ? {
   auth: {
     clientId: '893adac7-4ea6-44e3-b2fe-e7bd49f64814',
     authority: 'https://login.microsoftonline.com/d8d598e0-2fb2-4605-8514-1967b50e2bd6',
@@ -18,7 +22,7 @@ const MSAL_CONFIG = {
     cacheLocation: 'localStorage',
     storeAuthStateInCookie: false,
   },
-}
+} : null
 
 const SCOPES = ['Calendars.ReadWrite.Shared']
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
@@ -26,23 +30,26 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 // ── Eager initialization ─────────────────────────────────────────────────────
 // MSAL must initialize and handle the redirect response before React renders,
 // so the auth token from the redirect is available immediately on page load.
+// Skipped entirely in Electron.
 
 let msalInitError = null
 
-const msalInstance = new PublicClientApplication(MSAL_CONFIG)
-const msalReady = msalInstance.initialize()
-  .then(() => msalInstance.handleRedirectPromise())
-  .then(response => {
-    if (response) {
-      console.log('MSAL redirect login succeeded:', response.account?.username)
-    }
-    return msalInstance
-  })
-  .catch(err => {
-    console.error('MSAL init failed:', err)
-    msalInitError = err?.message || String(err)
-    return null
-  })
+const msalInstance = !isElectron ? new PublicClientApplication(MSAL_CONFIG) : null
+const msalReady = !isElectron && msalInstance
+  ? msalInstance.initialize()
+    .then(() => msalInstance.handleRedirectPromise())
+    .then(response => {
+      if (response) {
+        console.log('MSAL redirect login succeeded:', response.account?.username)
+      }
+      return msalInstance
+    })
+    .catch(err => {
+      console.error('MSAL init failed:', err)
+      msalInitError = err?.message || String(err)
+      return null
+    })
+  : Promise.resolve(null)
 
 export function getMsalInitError() {
   return msalInitError
