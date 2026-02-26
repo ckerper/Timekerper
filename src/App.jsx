@@ -6,14 +6,18 @@ import {
   parseIcsFile, filterIcsEvents, computeTotalGapMinutes
 } from './scheduler'
 import { useSyncStub } from './useSyncStub'
+import { useOutlookStub } from './useOutlookStub'
 import './App.css'
 
 const syncModules = import.meta.glob('./useSync.jsx', { eager: true })
 const useSync = syncModules['./useSync.jsx']?.useSync ?? useSyncStub
 
+const outlookModules = import.meta.glob('./useOutlook.jsx', { eager: true })
+const useOutlook = outlookModules['./useOutlook.jsx']?.useOutlook ?? useOutlookStub
+
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-23 7:45 PM CT'
+const LAST_UPDATED = '2026-02-26 10:03 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -237,6 +241,17 @@ function App() {
   )
   const windowStartRef = useRef(getTodayStr())
 
+  // ── Computed: Date Navigation (early — needed by hooks) ─────────────────
+
+  const todayStr = getTodayStr()
+  const isToday = selectedDate === todayStr
+  const dayOfWeek = new Date(todayStr + 'T12:00:00').getDay() // 0=Sun..6=Sat
+  const daysSinceMonday = (dayOfWeek + 6) % 7 // Mon=0, Tue=1, ..., Sun=6
+  const mostRecentMonday = addDays(todayStr, -daysSinceMonday)
+  const yesterday = addDays(todayStr, -1)
+  const minDate = mostRecentMonday < yesterday ? mostRecentMonday : yesterday
+  const maxDate = addDays(todayStr, 7)
+
   // ── State: UI ─────────────────────────────────────────────────────────────
 
   const [showTaskModal, setShowTaskModal] = useState(false)
@@ -322,6 +337,19 @@ function App() {
     forceRender(n => n + 1)
   }, [])
 
+  // ── Outlook (conditional — loaded via import.meta.glob) ───────────────────
+
+  const {
+    outlookAvailable, outlookConnected, outlookStatus, outlookError, lastFetched,
+    connectOutlook, disconnectOutlook, refreshOutlookEvents,
+  } = useOutlook({
+    events, setEvents,
+    settings,
+    pushUndo,
+    minDate, maxDate,
+    tags,
+  })
+
   const undo = useCallback(() => {
     const stack = undoStackRef.current
     if (stack.length === 0) return
@@ -351,16 +379,8 @@ function App() {
   const canUndo = undoStackRef.current.length > 0
   const canRedo = redoStackRef.current.length > 0
 
-  // ── Computed: Date Navigation ─────────────────────────────────────────────
+  // ── Computed: Date Navigation (continued) ────────────────────────────────
 
-  const todayStr = getTodayStr()
-  const isToday = selectedDate === todayStr
-  const dayOfWeek = new Date(todayStr + 'T12:00:00').getDay() // 0=Sun..6=Sat
-  const daysSinceMonday = (dayOfWeek + 6) % 7 // Mon=0, Tue=1, ..., Sun=6
-  const mostRecentMonday = addDays(todayStr, -daysSinceMonday)
-  const yesterday = addDays(todayStr, -1)
-  const minDate = mostRecentMonday < yesterday ? mostRecentMonday : yesterday
-  const maxDate = addDays(todayStr, 7)
   const canGoBack = selectedDate > minDate
   const canGoForward = selectedDate < maxDate
   const numViewDays = calendarView === '1day' ? 1 : (parseInt(calendarView) || 1)
@@ -1534,7 +1554,12 @@ function App() {
     <div className="app">
       {/* ── Header (pinned) ────────────────────────────────────────────── */}
       <header className="header">
-        <h1>Timekerper{syncIndicator}</h1>
+        <h1>Timekerper{syncIndicator}{outlookConnected && (
+          <span
+            className={`outlook-indicator ${outlookStatus}`}
+            title={outlookStatus === 'error' ? (outlookError || 'Error') : outlookStatus === 'fetching' ? 'Fetching...' : lastFetched ? `Outlook: ${lastFetched.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Outlook connected'}
+          />
+        )}</h1>
         <div className="header-right">
           <div className="undo-redo">
             <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)">↩</button>
@@ -1764,16 +1789,17 @@ function App() {
             <div className="panel-section">
               <div className="panel-section-header">
                 <h2>{isToday ? 'Events' : `Events (${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`}</h2>
-                {events.some(e => e.icsImported) && (() => {
+                {events.some(e => e.icsImported || e.outlookSynced) && (() => {
                   const dayEvents = events.filter(e => e.date === selectedDate)
                   const visible = dayEvents.filter(e => {
                     if (hidePastEvents && isToday && timeToMinutes(e.end) <= currentTime) return false
                     return true
                   })
+                  const isImported = e => e.icsImported || e.outlookSynced
                   const hiddenBySource = eventSourceFilter === 'manual'
-                    ? visible.filter(e => e.icsImported).length
+                    ? visible.filter(isImported).length
                     : eventSourceFilter === 'outlook'
-                      ? visible.filter(e => !e.icsImported).length
+                      ? visible.filter(e => !isImported(e)).length
                       : 0
                   return (
                     <button className="source-filter-toggle" onClick={() => setEventSourceFilter(f => f === 'all' ? 'manual' : f === 'manual' ? 'outlook' : 'all')}>
@@ -1793,8 +1819,9 @@ function App() {
               </div>
               <ul className="event-list">
                 {events.filter(e => e.date === selectedDate).sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start)).map(event => {
-                  if (eventSourceFilter === 'manual' && event.icsImported) return null
-                  if (eventSourceFilter === 'outlook' && !event.icsImported) return null
+                  const eventIsImported = event.icsImported || event.outlookSynced
+                  if (eventSourceFilter === 'manual' && eventIsImported) return null
+                  if (eventSourceFilter === 'outlook' && !eventIsImported) return null
                   const isPast = isToday ? timeToMinutes(event.end) <= currentTime : selectedDate < todayStr
                   if (hidePastEvents && isPast) return null
                   const tagColor = getTagColor(event.tagId)
@@ -1803,7 +1830,8 @@ function App() {
                       {tagColor && (
                         <span className="tag-dot" style={{ backgroundColor: tagColor }} title={getTagName(event.tagId)} />
                       )}
-                      {event.icsImported && <span className="ics-icon" title="Imported from Outlook">✉</span>}
+                      {event.outlookSynced && <span className="outlook-icon" title="From Outlook (live)">&#x1F4C5;</span>}
+                      {event.icsImported && !event.outlookSynced && <span className="ics-icon" title="Imported from .ics file">✉</span>}
                       <span className={`event-name${settings.wrapListNames ? ' wrap' : ''}`}>{event.name}</span>
                       <span className="list-end">
                         <span className="event-time">{formatBlockTimeRange(event.start, event.end, false)}</span>
@@ -1837,6 +1865,15 @@ function App() {
                 <button className="clear-btn" onClick={() => setShowBulkEventEntry(s => !s)}>Bulk Add</button>
                 <button className="clear-btn ics-import-btn" onClick={() => icsFileRef.current?.click()}>Import .ics</button>
                 <input ref={icsFileRef} type="file" accept=".ics,.ical,.ifb,.icalendar" onChange={importIcsFile} style={{ display: 'none' }} />
+                {outlookAvailable && (
+                  outlookConnected ? (
+                    <button className="clear-btn outlook-btn" onClick={refreshOutlookEvents} disabled={outlookStatus === 'fetching'}>
+                      {outlookStatus === 'fetching' ? 'Fetching...' : '\u21BB Outlook'}
+                    </button>
+                  ) : (
+                    <button className="clear-btn outlook-btn" onClick={connectOutlook}>Connect Outlook</button>
+                  )
+                )}
                 {events.length > 0 && (
                   <button className="clear-btn" onClick={exportEvents}>{copiedFeedback === 'events' ? 'Copied!' : 'Export Events'}</button>
                 )}
@@ -1975,7 +2012,8 @@ function App() {
                       >
                         <div className="block-content">
                           <span className="block-name">
-                            {block.icsImported && <span className="ics-icon">✉</span>}
+                            {block.outlookSynced && <span className="outlook-icon">&#x1F4C5;</span>}
+                            {block.icsImported && !block.outlookSynced && <span className="ics-icon">✉</span>}
                             {block.continuesBefore && '\u2192 '}
                             {blockName}
                             {block.continuesAfter && ' \u2192'}
@@ -2334,8 +2372,8 @@ function App() {
             </div>
 
             <div className="settings-section">
-              <h4>Calendar Import (.ics)</h4>
-              <p className="settings-hint">Which event statuses to include when importing an Outlook .ics file</p>
+              <h4>Calendar Import Filters</h4>
+              <p className="settings-hint">Which event statuses to include when importing from .ics files or Outlook live sync</p>
               <label className="toggle-row">
                 <input type="checkbox" checked={settings.icsImportBusy} onChange={e => updateSetting('icsImportBusy', e.target.checked)} />
                 <span>Busy</span>
@@ -2379,6 +2417,35 @@ function App() {
                 <p className="form-hint">Map Outlook categories to tags or exclude them during import</p>
               </div>
             </div>
+
+            {outlookAvailable && (
+            <div className="settings-section">
+              <h4>Outlook Calendar (Live)</h4>
+              <p className="settings-hint">Connect to your Outlook calendar to automatically sync events</p>
+              {!outlookConnected ? (
+                <button className="btn-primary" onClick={connectOutlook}>Sign in with Microsoft</button>
+              ) : (
+                <>
+                  <div className="outlook-status-row">
+                    <span className={`outlook-indicator ${outlookStatus}`} />
+                    <span>
+                      {outlookStatus === 'fetching' && 'Fetching events...'}
+                      {outlookStatus === 'idle' && lastFetched && `Last fetched ${lastFetched.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                      {outlookStatus === 'idle' && !lastFetched && 'Connected'}
+                      {outlookStatus === 'error' && (outlookError || 'Error fetching events')}
+                    </span>
+                    <button className="btn-secondary" onClick={refreshOutlookEvents} disabled={outlookStatus === 'fetching'} style={{ marginLeft: 'auto' }}>
+                      Refresh Now
+                    </button>
+                  </div>
+                  <p className="settings-hint" style={{ marginTop: '0.5rem' }}>
+                    Uses the same status filters as calendar import (above). Events refresh automatically every 5 minutes.
+                  </p>
+                  <button className="btn-secondary" style={{ marginTop: '0.5rem' }} onClick={disconnectOutlook}>Disconnect</button>
+                </>
+              )}
+            </div>
+            )}
 
             <div className="settings-section">
               <h4>Debug</h4>

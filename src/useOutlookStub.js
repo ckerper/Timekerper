@@ -1,0 +1,12 @@
+export function useOutlookStub() {
+  return {
+    outlookAvailable: false,
+    outlookConnected: false,
+    outlookStatus: 'idle',
+    outlookError: null,
+    lastFetched: null,
+    connectOutlook: () => {},
+    disconnectOutlook: () => {},
+    refreshOutlookEvents: () => {},
+  }
+}

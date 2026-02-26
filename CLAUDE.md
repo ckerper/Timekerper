@@ -10,6 +10,9 @@ A single-page time-blocking calendar app built with React 19 + Vite. All state l
 - **`src/useSync.jsx`** — Custom hook containing all GitHub Gist sync logic (state, effects, handlers, UI). Conditionally loaded via `import.meta.glob`; only exists on GitHub.
 - **`src/useSyncStub.js`** — No-op stub returning `{ syncIndicator: null, syncSettingsUI: null }`. Exists on both repos.
 - **`src/sync.js`** — Pure GitHub Gist API functions (no React). Only exists on GitHub.
+- **`src/useOutlook.jsx`** — Custom hook for live Outlook calendar integration via Microsoft Graph API. Conditionally loaded via `import.meta.glob`; only exists on GitHub.
+- **`src/useOutlookStub.js`** — No-op stub returning `{ outlookAvailable: false, ... }`. Exists on both repos.
+- **`src/outlook.js`** — Pure MSAL auth + Microsoft Graph API functions (no React). Only exists on GitHub.
 
 ## Key Concepts
 
@@ -54,7 +57,7 @@ Timekerper deploys to two environments:
 
 ```
 git checkout -b gitlab-deploy
-git rm src/sync.js src/useSync.jsx
+git rm src/sync.js src/useSync.jsx src/outlook.js src/useOutlook.jsx
 git rm -r Timekerper-iOS/
 npm run build                        # MUST rebuild — import.meta.glob resolves at build time
 git add docs/

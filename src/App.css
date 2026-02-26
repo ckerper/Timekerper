@@ -593,6 +593,38 @@ body {
   flex-shrink: 0;
 }
 
+.outlook-icon {
+  font-size: 0.7em;
+  opacity: 0.6;
+  margin-right: 3px;
+  flex-shrink: 0;
+}
+
+.outlook-btn {
+  color: var(--accent-blue, #0078d4) !important;
+}
+
+.outlook-indicator {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+.outlook-indicator.idle { background: #0078d4; }
+.outlook-indicator.fetching { background: #f59e0b; animation: pulse 1s infinite; }
+.outlook-indicator.error { background: #ef4444; }
+
+.outlook-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
 .task-name, .event-name {
   font-size: 0.8rem;
   color: var(--text-primary);
