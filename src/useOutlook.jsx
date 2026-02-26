@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  getInitializedMsal, getMsalInitError, acquireTokenSilent, loginRedirect, logout,
-  fetchCalendarEvents, graphEventToParsedFormat,
-} from './outlook'
+import { graphEventToParsedFormat } from './outlook'
 import { filterIcsEvents } from './scheduler'
+
+// Detect Electron: the preload script exposes window.electronOutlook
+const electron = typeof window !== 'undefined' && window.electronOutlook
+
+// Only import browser MSAL if we're NOT in Electron
+const browserOutlook = !electron
+  ? import('./outlook').catch(() => null)
+  : Promise.resolve(null)
 
 export function useOutlook({ events, setEvents, settings, pushUndo, minDate, maxDate, tags }) {
 
@@ -11,52 +16,81 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   const [outlookStatus, setOutlookStatus] = useState('idle') // 'idle' | 'fetching' | 'error'
   const [outlookError, setOutlookError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
-  const msalRef = useRef(null)
+  const msalRef = useRef(null) // only used in browser mode
   const fetchingRef = useRef(false)
 
-  // ── Pick up the eagerly-initialized MSAL instance ──────────────────────────
+  // ── Initialize: check for existing account ────────────────────────────────
 
   useEffect(() => {
     let cancelled = false
-    getInitializedMsal().then(instance => {
-      if (cancelled) return
-      if (!instance) {
-        // MSAL init failed — show the error
-        setOutlookStatus('error')
-        setOutlookError(getMsalInitError() || 'MSAL failed to initialize')
-        return
-      }
-      msalRef.current = instance
-      if (instance.getAllAccounts().length > 0) {
-        setOutlookConnected(true)
-      }
-    })
+
+    if (electron) {
+      // Electron: check if we have a cached account
+      electron.checkAccount().then(hasAccount => {
+        if (!cancelled && hasAccount) setOutlookConnected(true)
+      })
+    } else {
+      // Browser: try MSAL browser init
+      browserOutlook.then(mod => {
+        if (cancelled || !mod) return
+        return mod.getInitializedMsal().then(instance => {
+          if (cancelled) return
+          if (!instance) {
+            setOutlookStatus('error')
+            setOutlookError(mod.getMsalInitError?.() || 'MSAL failed to initialize')
+            return
+          }
+          msalRef.current = instance
+          if (instance.getAllAccounts().length > 0) {
+            setOutlookConnected(true)
+          }
+        })
+      })
+    }
+
     return () => { cancelled = true }
   }, [])
 
-  // ── Connect (redirect login) ──────────────────────────────────────────────
+  // ── Connect ───────────────────────────────────────────────────────────────
 
   const connectOutlook = useCallback(async () => {
-    if (!msalRef.current) {
-      setOutlookStatus('error')
-      setOutlookError(getMsalInitError() || 'MSAL not ready — try refreshing the page')
-      return
+    if (electron) {
+      setOutlookStatus('fetching')
+      setOutlookError(null)
+      try {
+        await electron.connect()
+        setOutlookConnected(true)
+        setOutlookStatus('idle')
+      } catch (err) {
+        setOutlookStatus('error')
+        setOutlookError(err.message || 'Connection failed')
+      }
+    } else {
+      // Browser fallback
+      if (!msalRef.current) {
+        const mod = await browserOutlook
+        setOutlookStatus('error')
+        setOutlookError(mod?.getMsalInitError?.() || 'MSAL not ready — try refreshing the page')
+        return
+      }
+      const mod = await browserOutlook
+      mod?.loginRedirect(msalRef.current)
     }
-    // This navigates away from the page. When it comes back,
-    // handleRedirectPromise (in outlook.js) processes the token,
-    // and the useEffect above detects the cached account.
-    loginRedirect(msalRef.current)
   }, [])
 
   // ── Disconnect ────────────────────────────────────────────────────────────
 
   const disconnectOutlook = useCallback(async () => {
-    if (!msalRef.current) return
     pushUndo()
     setEvents(prev => prev.filter(e => !e.outlookSynced))
-    try {
-      await logout(msalRef.current)
-    } catch { /* ignore logout errors */ }
+
+    if (electron) {
+      await electron.disconnect()
+    } else if (msalRef.current) {
+      const mod = await browserOutlook
+      try { await mod?.logout(msalRef.current) } catch { /* ignore */ }
+    }
+
     setOutlookConnected(false)
     setOutlookStatus('idle')
     setOutlookError(null)
@@ -66,20 +100,24 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   // ── Fetch & merge events ──────────────────────────────────────────────────
 
   const refreshOutlookEvents = useCallback(async () => {
-    if (!msalRef.current || fetchingRef.current) return
+    if (fetchingRef.current) return
     fetchingRef.current = true
     setOutlookStatus('fetching')
     setOutlookError(null)
     try {
-      // Get token silently (MSAL uses cached token)
-      let token = await acquireTokenSilent(msalRef.current)
-      if (!token) {
-        // Token expired and can't refresh — need to re-authenticate
-        loginRedirect(msalRef.current)
-        return
-      }
+      let graphEvents
 
-      const graphEvents = await fetchCalendarEvents(token, minDate, maxDate)
+      if (electron) {
+        // Electron: main process handles auth + fetch
+        graphEvents = await electron.fetchEvents(minDate, maxDate)
+      } else {
+        // Browser: use MSAL browser (will fail with CORS until CaTS adds SPA)
+        if (!msalRef.current) throw new Error('Not connected')
+        const mod = await browserOutlook
+        let token = await mod.acquireTokenSilent(msalRef.current)
+        if (!token) { mod.loginRedirect(msalRef.current); return }
+        graphEvents = await mod.fetchCalendarEvents(token, minDate, maxDate)
+      }
 
       // Transform and filter
       const parsed = graphEvents
@@ -131,9 +169,6 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
       setLastFetched(new Date())
       setOutlookStatus('idle')
     } catch (err) {
-      if (err.message === 'outlook_token_expired') {
-        setOutlookConnected(false)
-      }
       setOutlookStatus('error')
       setOutlookError(err.message)
     } finally {
