@@ -9,8 +9,11 @@ import { useSyncStub } from './useSyncStub'
 import { useOutlookStub } from './useOutlookStub'
 import './App.css'
 
+const isElectron = typeof window !== 'undefined' && !!window.electronOutlook
 const syncModules = import.meta.glob('./useSync.jsx', { eager: true })
-const useSync = syncModules['./useSync.jsx']?.useSync ?? useSyncStub
+const useSync = !isElectron && syncModules['./useSync.jsx']?.useSync
+  ? syncModules['./useSync.jsx'].useSync
+  : useSyncStub
 
 const outlookModules = import.meta.glob('./useOutlook.jsx', { eager: true })
 const useOutlook = outlookModules['./useOutlook.jsx']?.useOutlook ?? useOutlookStub
@@ -21,7 +24,7 @@ import.meta.glob('./outlook.js', { eager: true })
 
 // ─── Last Updated Timestamp ─────────────────────────────────────────────────
 // IMPORTANT: Update this timestamp every time you make changes to the code
-const LAST_UPDATED = '2026-02-26 11:12 PM CT'
+const LAST_UPDATED = '2026-02-27 03:14 PM CT'
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
@@ -347,6 +350,7 @@ function App() {
     outlookAvailable, outlookConnected, outlookStatus, outlookError, lastFetched,
     connectOutlook, disconnectOutlook, refreshOutlookEvents,
     pendingOutlookImport, finishOutlookImport,
+    pendingOutlookReplace, finishOutlookReplace,
   } = useOutlook({
     events, setEvents,
     settings,
@@ -2531,6 +2535,19 @@ function App() {
                 setIcsReplaceConfirm(null)
                 applyIcsImport(newEvents, true)
               }}>Clear before importing</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Outlook Replace Confirm Modal ──────────────────────────────────── */}
+      {pendingOutlookReplace && (
+        <div className="modal-overlay" style={{ zIndex: 200 }} onMouseDown={() => finishOutlookReplace(true)}>
+          <div className="modal" onMouseDown={e => e.stopPropagation()}>
+            <h3>Clear previously synced Outlook events?</h3>
+            <div className="modal-actions">
+              <button onClick={() => finishOutlookReplace(false)}>Keep (deduplicate)</button>
+              <button className="primary" onClick={() => finishOutlookReplace(true)}>Clear before syncing</button>
             </div>
           </div>
         </div>

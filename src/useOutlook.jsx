@@ -17,9 +17,11 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
   const [outlookError, setOutlookError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
   const [pendingOutlookImport, setPendingOutlookImport] = useState(null)
+  const [pendingOutlookReplace, setPendingOutlookReplace] = useState(null)
   const msalRef = useRef(null) // only used in browser mode
   const fetchingRef = useRef(false)
   const pendingRef = useRef(null) // mirror pending state for use in callbacks
+  const replaceRef = useRef(null)
 
   // ── Initialize: check for existing account ────────────────────────────────
 
@@ -99,7 +101,30 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
     setLastFetched(null)
   }, [pushUndo, setEvents])
 
-  // ── Apply category rules and merge into events ────────────────────────────
+  // ── Apply category rules, then merge into events ──────────────────────────
+
+  const mergeOutlookEvents = useCallback((newEvents, shouldReplace) => {
+    pushUndo()
+    setEvents(prev => {
+      const base = shouldReplace ? prev.filter(e => !e.outlookSynced) : prev
+      const toAdd = []
+      for (const ne of newEvents) {
+        const isDupe = base.some(ex =>
+          ex.name === ne.name && ex.start === ne.start &&
+          ex.end === ne.end && ex.date === ne.date
+        )
+        if (!isDupe) toAdd.push(ne)
+      }
+      return [...base, ...toAdd]
+    })
+
+    setLastFetched(new Date())
+    setOutlookStatus('idle')
+    setPendingOutlookImport(null)
+    setPendingOutlookReplace(null)
+    pendingRef.current = null
+    replaceRef.current = null
+  }, [pushUndo, setEvents])
 
   const applyOutlookImport = useCallback((filteredEvents, catRules) => {
     // Apply category exclusion
@@ -132,26 +157,17 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
       }
     })
 
-    // Replace existing outlookSynced events; deduplicate against manual events
-    pushUndo()
-    setEvents(prev => {
-      const manual = prev.filter(e => !e.outlookSynced)
-      const toAdd = []
-      for (const ne of newEvents) {
-        const isDupe = manual.some(ex =>
-          ex.name === ne.name && ex.start === ne.start &&
-          ex.end === ne.end && ex.date === ne.date
-        )
-        if (!isDupe) toAdd.push(ne)
-      }
-      return [...manual, ...toAdd]
-    })
-
-    setLastFetched(new Date())
-    setOutlookStatus('idle')
-    setPendingOutlookImport(null)
-    pendingRef.current = null
-  }, [pushUndo, setEvents])
+    // Check replace/append/ask setting
+    const replacePref = settings.icsReplaceOnImport
+    if (replacePref === 'ask') {
+      const pending = { newEvents }
+      replaceRef.current = pending
+      setPendingOutlookReplace(pending)
+      return
+    }
+    const shouldReplace = replacePref === 'yes' || replacePref === true
+    mergeOutlookEvents(newEvents, shouldReplace)
+  }, [pushUndo, setEvents, settings, mergeOutlookEvents])
 
   // Called by App.jsx when the category modal confirms
   const finishOutlookImport = useCallback((catRules) => {
@@ -159,6 +175,13 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
     if (!pending) return
     applyOutlookImport(pending.filteredEvents, catRules)
   }, [applyOutlookImport])
+
+  // Called by App.jsx when the replace confirm modal resolves
+  const finishOutlookReplace = useCallback((shouldReplace) => {
+    const pending = replaceRef.current
+    if (!pending) return
+    mergeOutlookEvents(pending.newEvents, shouldReplace)
+  }, [mergeOutlookEvents])
 
   // ── Fetch & merge events ──────────────────────────────────────────────────
 
@@ -271,5 +294,7 @@ export function useOutlook({ events, setEvents, settings, pushUndo, minDate, max
     refreshOutlookEvents,
     pendingOutlookImport,
     finishOutlookImport,
+    pendingOutlookReplace,
+    finishOutlookReplace,
   }
 }

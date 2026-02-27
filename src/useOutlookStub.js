@@ -10,5 +10,7 @@ export function useOutlookStub() {
     refreshOutlookEvents: () => {},
     pendingOutlookImport: null,
     finishOutlookImport: () => {},
+    pendingOutlookReplace: null,
+    finishOutlookReplace: () => {},
   }
 }
